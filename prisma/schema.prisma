@@ -39,9 +39,15 @@ model Users {
   notification Boolean @default(true)
   isBlocked    Boolean @default(false) // For block user
 
-  // Currency
-  virtual1 Float @default(0)
-  virtual2 Float @default(0) // ludi coins
+  // Currency - Cash-based system
+  cashBalance      Float    @default(0)     // Withdrawable USD balance
+  bonusBalance     Float    @default(0)     // Non-withdrawable promotional balance
+  totalDeposited   Float    @default(0)     // Lifetime deposits
+  totalWithdrawn   Float    @default(0)     // Lifetime withdrawals
+  
+  // PayPal Integration
+  paypalEmail      String?                  // User's PayPal email for payments
+  kycVerified      Boolean  @default(false) // KYC verification status
 
   gamesPlayed      Int                 @default(0)
   gamesWon         Int                 @default(0)
@@ -50,8 +56,11 @@ model Users {
   refreshToken     String?             @unique
   refreshTokenExpiry DateTime?
   referree         Json                @default("{}")
+  
+  // Relations
   Tranactions      UserTransactions[]
-  UserSwap         UserWalletHistory[]
+  PaymentRequests  PaymentRequest[]
+  CashTransactions CashTransaction[]
   // XP               UserXpReward?
   // GameXpLogs       UserXpLogs[]
   DailyrewardUser  DailyRewards?
@@ -64,7 +73,6 @@ model Users {
   UserPurchase     UserPurchase[]
   UserSuperPower   UserSuperPower[]
 
-  Wallets   Wallets?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -130,14 +138,15 @@ model UserTournamentScores {
   updatedAt        DateTime       @updatedAt
 }
 
-model Wallets {
-  id            Int     @id @default(autoincrement())
-  pzpEvmWallet  String? @unique
-  evmWalletPapi String? @unique
-  tonWallet     String? @unique
-  isTonActive   Boolean @default(false)
-  User          Users   @relation(fields: [id], references: [id])
-}
+// DEPRECATED: Crypto wallet model - replaced with PayPal payments
+// model Wallets {
+//   id            Int     @id @default(autoincrement())
+//   pzpEvmWallet  String? @unique
+//   evmWalletPapi String? @unique
+//   tonWallet     String? @unique
+//   isTonActive   Boolean @default(false)
+//   User          Users   @relation(fields: [id], references: [id])
+// }
 
 model DailyUserTasks {
   id        Int      @id @default(autoincrement())
@@ -192,26 +201,27 @@ model UserTransactions {
   updatedAt        DateTime @updatedAt
 }
 
-model UserWalletHistory {
-  id               Int          @id @default(autoincrement())
-  user_id          Int
-  item_id          Int?
-  from_amount      Float
-  from_currency    String
-  operation        String
-  transaction_hash String?
-  transaction_type String       @default("")
-  status           String?
-  to_amount        Float?
-  to_currency      String?
-  to_address       String?
-  currency         String?
-  amount           Float?
-  User             Users        @relation(fields: [user_id], references: [id])
-  activities       activities[] @relation("UserWalletHistoryToActivities") // Named relation for clarity
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-}
+// DEPRECATED: Crypto wallet history - replaced with CashTransaction model
+// model UserWalletHistory {
+//   id               Int          @id @default(autoincrement())
+//   user_id          Int
+//   item_id          Int?
+//   from_amount      Float
+//   from_currency    String
+//   operation        String
+//   transaction_hash String?
+//   transaction_type String       @default("")
+//   status           String?
+//   to_amount        Float?
+//   to_currency      String?
+//   to_address       String?
+//   currency         String?
+//   amount           Float?
+//   User             Users        @relation(fields: [user_id], references: [id])
+//   activities       activities[] @relation("UserWalletHistoryToActivities") // Named relation for clarity
+//   createdAt        DateTime     @default(now())
+//   updatedAt        DateTime     @updatedAt
+// }
 
 model Master {
   key   String  @unique
@@ -247,12 +257,12 @@ model admin_login_logs {
   created_at   DateTime  @db.Timestamp(6)
   updated_at   DateTime  @db.Timestamp(6)
   ip_address_2 String?   @db.VarChar
-  admins       admins?   @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d4ea813624")
+  admin        Admins?   @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d4ea813624")
 
   @@index([admin_id], map: "index_admin_login_logs_on_admin_id")
 }
 
-model admins {
+model Admins {
   id                     BigInt             @id @default(autoincrement())
   email                  String             @unique(map: "index_admins_on_email") @default("") @db.VarChar
   encrypted_password     String             @default("") @db.VarChar
@@ -268,6 +278,9 @@ model admins {
   keypass                String?            @db.VarChar
   qr                     Boolean?           @default(false)
   admin_login_logs       admin_login_logs[]
+  ProcessedPayments      PaymentRequest[]   @relation("ProcessedPayments")
+
+  @@map("admins")
 }
 
 model UserGameRewardHistory {
@@ -337,7 +350,8 @@ model activities {
   refId             Int?
   activity_type     String?
   wallet_history_id Int?
-  wallet_history    UserWalletHistory? @relation("UserWalletHistoryToActivities", fields: [wallet_history_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_53a863e245")
+  // DEPRECATED: wallet_history relation removed (crypto system replaced with CashTransaction)
+  // wallet_history    UserWalletHistory? @relation("UserWalletHistoryToActivities", fields: [wallet_history_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_53a863e245")
   users             Users?             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_7e11bb717f")
 
   createdAt DateTime @default(now())
@@ -416,4 +430,86 @@ model UserSuperPower {
   superPower SuperPower @relation(fields: [superPowerId], references: [id])
 
   @@unique([userId, superPowerId]) // one row per user+power
+}
+
+// ==============================================================================
+// NEW PAYMENT SYSTEM MODELS - PayPal Based Cash Gaming
+// ==============================================================================
+
+enum PaymentRequestType {
+  deposit
+  withdrawal
+}
+
+enum PaymentRequestStatus {
+  pending
+  approved
+  rejected
+  completed
+  cancelled
+}
+
+// Payment requests for deposits and withdrawals
+model PaymentRequest {
+  id                  Int                   @id @default(autoincrement())
+  userId              Int
+  type                PaymentRequestType
+  amount              Float
+  paypalEmail         String
+  paypalTransactionId String?               // Transaction ID after processing
+  status              PaymentRequestStatus  @default(pending)
+  adminNotes          String?               @db.Text
+  proofImageUrl       String?               // For deposit receipts/proof
+  rejectionReason     String?               @db.Text
+  requestedAt         DateTime              @default(now())
+  processedAt         DateTime?
+  processedBy         BigInt?               // Admin ID who processed
+  
+  User            Users             @relation(fields: [userId], references: [id])
+  ProcessedByAdmin Admins?          @relation("ProcessedPayments", fields: [processedBy], references: [id])
+  CashTransactions CashTransaction[]
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([requestedAt])
+}
+
+enum CashTransactionType {
+  deposit
+  withdrawal
+  game_entry
+  game_win
+  game_refund
+  referral_bonus
+  daily_bonus
+  admin_credit
+  admin_debit
+  purchase
+}
+
+// Cash transaction history for all money movements
+model CashTransaction {
+  id               Int                 @id @default(autoincrement())
+  userId           Int
+  amount           Float               // Positive for credits, can be negative for tracking
+  type             CashTransactionType
+  balanceType      String              @default("cash") // 'cash' or 'bonus'
+  balanceBefore    Float
+  balanceAfter     Float
+  description      String              @db.Text
+  paymentRequestId Int?
+  metadata         Json?               @default("{}")  // Additional data (game_id, room_id, etc)
+  
+  User           Users           @relation(fields: [userId], references: [id])
+  PaymentRequest PaymentRequest? @relation(fields: [paymentRequestId], references: [id])
+  
+  createdAt      DateTime        @default(now())
+  
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
 }

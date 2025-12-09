@@ -23,6 +23,7 @@ import gameRoute from "./routes/game.js";
 import earnLudyRoute from "./routes/earnLudyRoutes.js";
 import storeRoute from "./routes/storeRoutes.js";
 import superPowerRoute from "./routes/superPowerRoutes.js";
+import paymentRoute from "./routes/paymentRoutes.js";
 import adminRoutes from "./routes/adminRoutes/index.js";
 import WeeklyRewardsCronJobs from "./utility/weeklyRewardCron.js";
 import {distributeWeeklyRewards} from "./utility/weeklyRewardCron.js";
@@ -71,6 +72,7 @@ app.use("/api", gameRoute);
 app.use("/api", earnLudyRoute);
 app.use("/api", storeRoute);
 app.use("/api", superPowerRoute);
+app.use("/api", paymentRoute);
 app.use("/api/admin", adminRoutes);
 //#endregion
 

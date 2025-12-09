@@ -10,6 +10,7 @@ import earnLudyRoutes from "./earnLudyRoutes.js";
 import dashboardRoutes from "./dashboardRoutes.js";
 import storeRoutes from "./storeRoutes.js";
 import superPowerRoutes from "./superPowerRoutes.js";
+import paymentRoutes from "./paymentRoutes.js";
 import { AdminMiddleware, requireRoles } from '../../utility/tokenAuthService.js';
 import { PlayerRole } from '../../utility/enums.js';
 
@@ -29,6 +30,7 @@ router.use("/", AdminMiddleware,  requireRoles([PlayerRole.super_admin, PlayerRo
 router.use("/", AdminMiddleware,  requireRoles([PlayerRole.super_admin, PlayerRole.admin]), dashboardRoutes);
 router.use("/", AdminMiddleware,  requireRoles([PlayerRole.super_admin, PlayerRole.admin]), storeRoutes);
 router.use("/", AdminMiddleware,  requireRoles([PlayerRole.super_admin, PlayerRole.admin]), superPowerRoutes);
+router.use("/", AdminMiddleware,  requireRoles([PlayerRole.super_admin, PlayerRole.admin]), paymentRoutes);
 
 export default router;
 

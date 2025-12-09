@@ -27,6 +27,56 @@ export const validationSchema = (action) => {
       };
     }
 
+    case "DEPOSIT_REQUEST": {
+      return {
+        amount: Joi.number().min(5).required(),
+        paypalEmail: Joi.string().email().required(),
+        proofImageUrl: Joi.string().uri().optional(),
+      };
+    }
+
+    case "WITHDRAWAL_REQUEST": {
+      return {
+        amount: Joi.number().min(10).required(),
+        paypalEmail: Joi.string().email().required(),
+      };
+    }
+
+    case "UPDATE_PAYPAL_EMAIL": {
+      return {
+        paypalEmail: Joi.string().email().required(),
+      };
+    }
+
+    case "APPROVE_PAYMENT": {
+      return {
+        paypalTransactionId: Joi.string().optional(),
+        adminNotes: Joi.string().optional(),
+      };
+    }
+
+    case "COMPLETE_PAYMENT": {
+      return {
+        paypalTransactionId: Joi.string().required(),
+        adminNotes: Joi.string().optional(),
+      };
+    }
+
+    case "REJECT_PAYMENT": {
+      return {
+        rejectionReason: Joi.string().required(),
+        adminNotes: Joi.string().optional(),
+      };
+    }
+
+    case "ADJUST_BALANCE": {
+      return {
+        amount: Joi.number().required(),
+        reason: Joi.string().required(),
+        balanceType: Joi.string().valid('cash', 'bonus').optional(),
+      };
+    }
+
     case "USER_UPDATE": {
       return {
         imageIndex: Joi.number().integer().min(0).max(25).optional(),
