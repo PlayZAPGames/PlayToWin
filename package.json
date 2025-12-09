@@ -1,0 +1,57 @@
+{
+  "name": "PlayToWin-backend",
+  "version": "1.0.0",
+  "description": "Real money tournament gaming platform - Backend API",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "tournament",
+    "gaming",
+    "real-money",
+    "esports",
+    "casual-games"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.16.2",
+    "axios": "^1.7.9",
+    "bcrypt": "^6.0.0",
+    "body-parser": "^1.20.2",
+    "bs58": "^6.0.0",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "firebase": "^10.12.2",
+    "firebase-admin": "^13.4.0",
+    "i18next": "^23.14.0",
+    "joi": "^17.10.2",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
+    "node-schedule": "^2.1.1",
+    "pg": "^8.11.5",
+    "qrcode": "^1.5.1",
+    "speakeasy": "^2.0.0",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/qrcode": "^1.5.0",
+    "eslint": "^9.30.1",
+    "globals": "^16.3.0",
+    "nodemon": "^3.1.4",
+    "prettier": "^3.6.2",
+    "prisma": "^5.19.1"
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "item_id": 1,
+    "name": "small",
+    "price": 10,
+    "quantity": 100,
+    "reward_type": "virtual1",
+    "currency_type": "pzp_ton"
+  },
+  {
+    "item_id": 2,
+    "name": "medium",
+    "price": 45,
+    "quantity": 500,
+    "reward_type": "virtual1",
+    "currency_type": "pzp_ton"
+  },
+  {
+    "item_id": 4,
+    "name": "big",
+    "price": 150,
+    "quantity": 2000,
+    "reward_type": "virtual1",
+    "currency_type": "pzp_ton"
+  }
+]

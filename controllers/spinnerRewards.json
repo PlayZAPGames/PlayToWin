@@ -1,0 +1,50 @@
+[
+  {
+    "id": 0,
+    "currency": "virtual1",
+    "amount": 30,
+    "probablity": 0.4
+  },
+  {
+    "id": 1,
+    "currency": "virtual1",
+    "amount": 50,
+    "probablity": 0.25
+  },
+  {
+    "id": 2,
+    "currency": "virtual1",
+    "amount": 70,
+    "probablity": 0.15
+  },
+  {
+    "id": 3,
+    "currency": "virtual1",
+    "amount": 90,
+    "probablity": 0.08
+  },
+  {
+    "id": 4,
+    "currency": "virtual1",
+    "amount": 120,
+    "probablity": 0.06
+  },
+  {
+    "id": 5,
+    "currency": "virtual1",
+    "amount": 150,
+    "probablity": 0.03
+  },
+  {
+    "id": 6,
+    "currency": "virtual1",
+    "amount": 200,
+    "probablity": 0.02
+  },
+  {
+    "id": 7,
+    "currency": "virtual1",
+    "amount": 300,
+    "probablity": 0.01
+  }
+]

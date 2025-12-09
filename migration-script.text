@@ -1,0 +1,20 @@
+$timestamp = Get-Date -Format "yyyyMMddHHmmss"
+$folderName = "${timestamp}_baseline"
+$fullPath = "prisma/migrations/$folderName"
+
+# 1. Create migration folder
+New-Item -ItemType Directory -Path $fullPath -Force
+
+# 2. Generate full schema diff (baseline)
+npx prisma migrate diff `
+  --from-url "postgresql://deploy:4f3ced4a94d02911858890dcb871f177@104.248.158.254:5432/playzap_production" `
+  --to-schema-datamodel prisma/schema.prisma `
+  --script > "$fullPath/migration.sql"
+
+  Apply this file sql queries (code) into db directly to update the db
+
+# 3. Mark this migration as already applied 
+npx prisma migrate resolve --applied $folderName --force
+
+
+

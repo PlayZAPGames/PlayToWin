@@ -1,0 +1,419 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LoginType {
+  guest
+  google
+  apple
+  telegram
+}
+
+// Store item types
+enum ItemType {
+  weapon
+  inventory 
+}
+
+generator client {
+  provider = "prisma-client-js" // Specifies that you want to generate Prisma Client code
+}
+
+model Users {
+  id        Int       @id @default(autoincrement())
+  socialId  String?   @unique // stores telegram/google/apple ID
+  loginType LoginType // enum: guest/google/telegram/apple
+
+  // Auth identity
+  username   String? @default("")
+  imageUrl   String? // For image
+  imageIndex Int?    @default(0) // For avatar
+
+  // App status
+  lastActive   Int
+  role         String  @default("user")
+  status       Int     @default(0) // 0-active, 1-restricted, 2-blocked
+  language     String  @default("en")
+  botStart     Boolean @default(false)
+  notification Boolean @default(true)
+  isBlocked    Boolean @default(false) // For block user
+
+  // Currency
+  virtual1 Float @default(0)
+  virtual2 Float @default(0) // ludi coins
+
+  gamesPlayed      Int                 @default(0)
+  gamesWon         Int                 @default(0)
+  fcmToken         String?             @unique
+  token            String?             @unique
+  refreshToken     String?             @unique
+  refreshTokenExpiry DateTime?
+  referree         Json                @default("{}")
+  Tranactions      UserTransactions[]
+  UserSwap         UserWalletHistory[]
+  // XP               UserXpReward?
+  // GameXpLogs       UserXpLogs[]
+  DailyrewardUser  DailyRewards?
+  UserReferrer     UserReferral[]      @relation("UserReferrer")
+  UserReferee      UserReferral?       @relation("UserReferee")
+  // UserSpinner     UserSpinner?
+  // ZClubLog         ZClubLogs[]
+  DailyTasks       DailyUserTasks[]
+  user_spin_wheels user_spin_wheels[]
+  UserPurchase     UserPurchase[]
+  UserSuperPower   UserSuperPower[]
+
+  Wallets   Wallets?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  RewardHistory UserGameRewardHistory[] @relation("UserToRewardHistory")
+  activities    activities[]
+
+  @@index([id], map: "index_Users_on_id")
+}
+
+model Rooms {
+  id              Int              @id @default(autoincrement())
+  name            String?
+  iMessage        String?
+  chatId          String?
+  maxPlayers      Int              @default(4)
+  gameId          Int?
+  entryFee        Int?
+  currencyType    String?
+  released        Boolean?         @default(false)
+  freeEntry       Boolean          @default(false) // If true, no reward will win
+  releaseResponse String?
+  startTime       DateTime?
+  releaseTime     DateTime?
+  UserTournament  UserTournament[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model UserTournament {
+  id                   Int                    @id @default(autoincrement())
+  userId               Int
+  tgId                 BigInt                 @default(0)
+  iMessage             String                 @default("")
+  userName             String
+  banned               Boolean                @default(false)
+  score                Int                    @default(0)
+  scoreAry             Int[]                  @default([])
+  roomId               Int
+  room                 Rooms                  @relation(fields: [roomId], references: [id])
+  UserTournamentScores UserTournamentScores[]
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@unique([userId, roomId]) // 🚨 Required for upsert
+}
+
+model UserTournamentScores {
+  id               Int            @id @default(autoincrement())
+  userTournamentId Int
+  userId           Int
+  score            Int            @default(0)
+  scoreAry         Int[]          @default([])
+  rank             String?
+  points           Int?
+  time             Int?
+  lives            Int            @default(3)
+  timer            Float          @default(180)
+  stats            Json           @default("{}")
+  scoreSubmit      Boolean        @default(false)
+  timerStarted     Boolean        @default(false)
+  UserTournament   UserTournament @relation(fields: [userTournamentId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Wallets {
+  id            Int     @id @default(autoincrement())
+  pzpEvmWallet  String? @unique
+  evmWalletPapi String? @unique
+  tonWallet     String? @unique
+  isTonActive   Boolean @default(false)
+  User          Users   @relation(fields: [id], references: [id])
+}
+
+model DailyUserTasks {
+  id        Int      @id @default(autoincrement())
+  user_id   Int      @unique
+  user_name String?
+  tasks     Json
+  User      Users    @relation(fields: [user_id], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DailyTasksValues {
+  id            Int       @id @default(autoincrement())
+  task_name     String
+  task_desc     String?
+  task_pfp      String?
+  task_redirect String?
+  lastClaimDate DateTime?
+  due_date      DateTime?
+  reward        Float?
+  reward_range  String?
+  currency_type String?
+  status        String    @default("InActive")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model UserReferral {
+  id             Int      @id @default(autoincrement())
+  referee        Int      @unique
+  refereeAmount  Float    @default(0)
+  redeem         Boolean  @default(false)
+  referrer       Int
+  referrerAmount Float    @default(0)
+  referrerUser   Users    @relation("UserReferrer", fields: [referrer], references: [id])
+  refereeUser    Users    @relation("UserReferee", fields: [referee], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model UserTransactions {
+  id               Int      @id @default(autoincrement())
+  user_id          Int
+  amount           Float
+  currency         String
+  operation        String
+  transaction_hash String?  @unique
+  transaction_type String   @default("")
+  status           String?
+  User             Users    @relation(fields: [user_id], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model UserWalletHistory {
+  id               Int          @id @default(autoincrement())
+  user_id          Int
+  item_id          Int?
+  from_amount      Float
+  from_currency    String
+  operation        String
+  transaction_hash String?
+  transaction_type String       @default("")
+  status           String?
+  to_amount        Float?
+  to_currency      String?
+  to_address       String?
+  currency         String?
+  amount           Float?
+  User             Users        @relation(fields: [user_id], references: [id])
+  activities       activities[] @relation("UserWalletHistoryToActivities") // Named relation for clarity
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Master {
+  key   String  @unique
+  data1 Json?
+  data2 String? @db.VarChar(100)
+}
+
+model Notifications {
+  id    String             @unique
+  data1 NotificationsData?
+}
+
+model NotificationsData {
+  id            String        @unique
+  data          Json          @default("{}")
+  Notifications Notifications @relation(fields: [id], references: [id])
+}
+
+model DailyRewards {
+  id           Int      @id @default(autoincrement())
+  user_id      Int      @unique
+  dailySession Json?
+  User         Users    @relation(fields: [user_id], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model admin_login_logs {
+  id           BigInt    @id @default(autoincrement())
+  admin_id     BigInt?
+  ip_address   String?   @db.VarChar
+  login_time   DateTime? @db.Timestamp(6)
+  created_at   DateTime  @db.Timestamp(6)
+  updated_at   DateTime  @db.Timestamp(6)
+  ip_address_2 String?   @db.VarChar
+  admins       admins?   @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d4ea813624")
+
+  @@index([admin_id], map: "index_admin_login_logs_on_admin_id")
+}
+
+model admins {
+  id                     BigInt             @id @default(autoincrement())
+  email                  String             @unique(map: "index_admins_on_email") @default("") @db.VarChar
+  encrypted_password     String             @default("") @db.VarChar
+  name                   String?            @db.VarChar
+  reset_password_token   String?            @unique(map: "index_admins_on_reset_password_token") @db.VarChar
+  reset_password_sent_at DateTime?          @db.Timestamp(6)
+  remember_created_at    DateTime?          @db.Timestamp(6)
+  created_at             DateTime           @db.Timestamp(6)
+  updated_at             DateTime           @db.Timestamp(6)
+  player                 Int? //  enum player: ['super_admin', 'admin', 'manager', 'partner']
+  modifiable_id          Int?
+  modifiable_type        String?            @db.VarChar
+  keypass                String?            @db.VarChar
+  qr                     Boolean?           @default(false)
+  admin_login_logs       admin_login_logs[]
+}
+
+model UserGameRewardHistory {
+  id        Int      @id @default(autoincrement())
+  seasonId  Int?
+  userId    Int
+  gameId    Int
+  roomId    Int?
+  reward    Float
+  rank      String?
+  currency  String // e.g., "virtual1", "virtual1", "pzp_core"
+  reason    String? // e.g., "win", "bonus", "referral"
+  createdAt DateTime @default(now())
+  User      Users    @relation(fields: [userId], references: [id], name: "UserToRewardHistory")
+}
+
+model games {
+  id                  Int     @id @default(autoincrement())
+  gameName            String
+  serverGameName      String?
+  keyboardGameName    String?
+  url                 String?
+  miniAppUrl          String?
+  iMessage_Solo       String?
+  entryFee            Float
+  currencyType        String  @default("virtual1") // "free", "virtual1", "virtual2"
+  winningCurrencyType String  @default("virtual2") //"virtual1", "virtual2"
+  kills               Float   @default(1)
+  timeBonus           Float   @default(1)
+  bossKills           Float   @default(100)
+}
+
+
+
+model spin_wheels {
+  id               Int                @id @default(autoincrement())
+  name             String?            @db.VarChar
+  is_disabled      Boolean?           @default(false)
+  perc             Float?             @default(0.0)
+  virtual1         Float?             @default(0.0)
+  virtual2         Float?             @default(0.0)
+  user_spin_wheels user_spin_wheels[]
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @updatedAt
+}
+
+model user_spin_wheels {
+  id            Int          @id @default(autoincrement())
+  user_id       Int?
+  spin_wheel_id Int?
+  is_claimed    Boolean?     @default(false)
+  created_at    DateTime     @db.Timestamp(6)
+  updated_at    DateTime     @db.Timestamp(6)
+  virtual1      Float?       @default(0.0)
+  virtual2      Float?       @default(0.0)
+  Users         Users?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_41c571ff54")
+  spin_wheels   spin_wheels? @relation(fields: [spin_wheel_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d03a19184d")
+
+  @@index([spin_wheel_id], map: "index_user_spin_wheels_on_spin_wheel_id")
+  @@index([user_id], map: "index_user_spin_wheels_on_user_id")
+}
+
+model activities {
+  id                Int                @id @default(autoincrement())
+  userId            Int?
+  detail            Json?
+  refId             Int?
+  activity_type     String?
+  wallet_history_id Int?
+  wallet_history    UserWalletHistory? @relation("UserWalletHistoryToActivities", fields: [wallet_history_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_53a863e245")
+  users             Users?             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_7e11bb717f")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId], map: "index_activities_on_user_id")
+  @@index([wallet_history_id], map: "index_activities_on_wallet_history_id")
+  @@index([createdAt], map: "index_activities_on_created_at")
+  @@index([refId], map: "index_activities_on_ref_id")
+  @@index([activity_type], map: "index_activities_on_activity_type")
+}
+
+model StoreItem {
+  id           Int   @id @default(autoincrement())
+  name         String
+  type         ItemType
+  price        Int? // cost to buy
+  currencyType String // e.g. "virtual1" or "virtual2"
+  description String?
+  baseLevel   Int         @default(1)
+  maxLevel    Int         @default(3)
+  levels      ItemLevel[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  UserPurchase UserPurchase[]
+}
+
+// Master table for all store items
+model ItemLevel {
+  id          Int   @id @default(autoincrement())
+  itemId      Int
+  level       Int
+  upgradeCost Int
+  stats       Json
+  StoreItem   StoreItem @relation(fields: [itemId], references: [id])
+
+  @@unique([itemId, level])
+}
+
+// Which user bought what
+model UserPurchase {
+  id           Int    @id @default(autoincrement())
+  userId       Int
+  itemId       Int
+  currentLevel Int       @default(1)
+  unlocked     Boolean   @default(false)
+  Users        Users     @relation(fields: [userId], references: [id])
+  StoreItem    StoreItem @relation(fields: [itemId], references: [id])
+
+  @@unique([userId, itemId]) // optional: ensures 1 item per user
+  @@index([userId])
+  @@index([itemId])
+}
+
+model SuperPower {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  price       Int
+  icon        String? // optional image/icon path
+  isActive    Boolean @default(true)
+
+  userPowers UserSuperPower[]
+}
+
+model UserSuperPower {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  superPowerId Int
+  quantity     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users      Users      @relation(fields: [userId], references: [id])
+  superPower SuperPower @relation(fields: [superPowerId], references: [id])
+
+  @@unique([userId, superPowerId]) // one row per user+power
+}

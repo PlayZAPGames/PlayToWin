@@ -1,0 +1,368 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    background-color: white;
+    padding: 50px;
+    padding-top: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    text-align: center;
+}
+
+h1 {
+    color: #333;
+}
+
+.heading-container {
+    display: flex;
+    margin: auto;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.heading-container a {
+    text-decoration: none;
+}
+
+.heading-container a:hover {
+    text-decoration: underline;
+}
+
+#gamesContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.gamePanel {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    width: 100%;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    max-width: 500px;
+}
+
+h2 {
+    color: #333;
+    margin-top: 0;
+}
+
+label {
+    display: block;
+    margin: 10px 0 5px;
+    font-weight: bold;
+}
+
+select,
+input,
+textarea {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.customNumberGroup,
+.mediaUrlGroup,
+.buttonUrlGroup,
+.buttonNameGroup {
+    display: none;
+    width: 100%;
+}
+
+.scheduleButton,
+.sendNotificationNowButton,
+.styled-button,
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+.scheduleButton:hover,
+.sendNotificationNowButton:hover,
+.styled-button:hover,
+button:hover {
+    background-color: #0056b3;
+}
+
+.autoScheduleContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.autoScheduleCheckbox {
+    max-width: max-content;
+    display: inline-block;
+    margin-left: 8px;
+    margin-top: 9px;
+}
+
+input:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+}
+
+.totalUsersSelected {
+    font-weight: bold;
+    color: #007bff;
+}
+
+textarea {
+    resize: none;
+}
+
+/* ----table----- */
+
+#tableContainer {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.telegramIds {
+    min-width: 150px;
+    max-width: 150px;
+    overflow: scroll;
+}
+
+table {
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th,
+td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+.kill-button {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.kill-button:hover {
+    background-color: darkred;
+}
+
+/* -----------toast---------- */
+
+#scheduled-success,
+#send-now-success,
+#error {
+    visibility: hidden;
+    min-width: 250px;
+    margin-left: -125px;
+    background-color: #59d939;
+    color: #1c1a1a;
+    text-align: center;
+    border-radius: 10px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1;
+    left: 50%;
+    bottom: 30px;
+}
+
+#error {
+    background-color: #df3535;
+    color: white;
+}
+
+#scheduled-success.show,
+#send-now-success.show,
+#error.show {
+    visibility: visible;
+    /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+  However, delay the fade out process for 2.5 seconds */
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+.anal-cards-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.anal-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    justify-content: center;
+    align-items: center;
+    /* border: 1px solid black; */
+    padding: 5px;
+    transition: background-color 200ms;
+    box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+}
+
+.anal-card:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+.anal-card p {
+    font-size: 30px;
+    line-height: 10px;
+}
+
+.anal-card h3 {
+    line-height: 10px;
+}
+
+#active-users>div {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    padding: 0px;
+}
+
+#active-tab {
+    display: flex;
+    gap: 10px;
+}
+
+#active-tab span {
+    display: flex;
+    gap: 10px;
+    cursor: pointer;
+}
+
+#active-tab span:nth-child(1) {
+    font-weight: 900;
+}
+
+#active-tab span:hover {
+    text-decoration: underline;
+}
+
+.stats-fetch-input {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+@-webkit-keyframes fadein {
+    from {
+        bottom: 0;
+        opacity: 0;
+    }
+
+    to {
+        bottom: 30px;
+        opacity: 1;
+    }
+}
+
+@keyframes fadein {
+    from {
+        bottom: 0;
+        opacity: 0;
+    }
+
+    to {
+        bottom: 30px;
+        opacity: 1;
+    }
+}
+
+@-webkit-keyframes fadeout {
+    from {
+        bottom: 30px;
+        opacity: 1;
+    }
+
+    to {
+        bottom: 0;
+        opacity: 0;
+    }
+}
+
+@keyframes fadeout {
+    from {
+        bottom: 30px;
+        opacity: 1;
+    }
+
+    to {
+        bottom: 0;
+        opacity: 0;
+    }
+}
+
+.fetchTournamentContainer {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.fetchTournamentContainer input {
+    max-width: 200px;
+}
+
+.index-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.index-container ul {
+    line-height: 30px;
+}
+
+
+.create-task-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#task-list-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+@media only screen and (max-width: 800px) {
+    .anal-cards-container {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
