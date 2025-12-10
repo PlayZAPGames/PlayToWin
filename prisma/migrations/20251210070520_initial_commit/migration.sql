@@ -2,7 +2,16 @@
 CREATE TYPE "LoginType" AS ENUM ('guest', 'google', 'apple', 'telegram');
 
 -- CreateEnum
-CREATE TYPE "ItemType" AS ENUM ('weapon', 'armour');
+CREATE TYPE "ItemType" AS ENUM ('weapon', 'inventory');
+
+-- CreateEnum
+CREATE TYPE "PaymentRequestType" AS ENUM ('deposit', 'withdrawal');
+
+-- CreateEnum
+CREATE TYPE "PaymentRequestStatus" AS ENUM ('pending', 'approved', 'rejected', 'completed', 'cancelled');
+
+-- CreateEnum
+CREATE TYPE "CashTransactionType" AS ENUM ('deposit', 'withdrawal', 'game_entry', 'game_win', 'game_refund', 'referral_bonus', 'daily_bonus', 'admin_credit', 'admin_debit', 'purchase');
 
 -- CreateTable
 CREATE TABLE "Users" (
@@ -19,12 +28,18 @@ CREATE TABLE "Users" (
     "botStart" BOOLEAN NOT NULL DEFAULT false,
     "notification" BOOLEAN NOT NULL DEFAULT true,
     "isBlocked" BOOLEAN NOT NULL DEFAULT false,
-    "virtual1" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "virtual2" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "cash" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "bonusBalance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "totalDeposited" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "totalWithdrawn" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "paypalEmail" TEXT,
+    "kycVerified" BOOLEAN NOT NULL DEFAULT false,
     "gamesPlayed" INTEGER NOT NULL DEFAULT 0,
     "gamesWon" INTEGER NOT NULL DEFAULT 0,
     "fcmToken" TEXT,
     "token" TEXT,
+    "refreshToken" TEXT,
+    "refreshTokenExpiry" TIMESTAMP(3),
     "referree" JSONB NOT NULL DEFAULT '{}',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -89,17 +104,6 @@ CREATE TABLE "UserTournamentScores" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "UserTournamentScores_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Wallets" (
-    "id" SERIAL NOT NULL,
-    "pzpEvmWallet" TEXT,
-    "evmWalletPapi" TEXT,
-    "tonWallet" TEXT,
-    "isTonActive" BOOLEAN NOT NULL DEFAULT false,
-
-    CONSTRAINT "Wallets_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -275,8 +279,9 @@ CREATE TABLE "games" (
     "entryFee" DOUBLE PRECISION NOT NULL,
     "currencyType" TEXT NOT NULL DEFAULT 'virtual1',
     "winningCurrencyType" TEXT NOT NULL DEFAULT 'virtual2',
-    "coins" DOUBLE PRECISION NOT NULL,
-    "timeBonus" DOUBLE PRECISION NOT NULL,
+    "kills" DOUBLE PRECISION NOT NULL DEFAULT 1,
+    "timeBonus" DOUBLE PRECISION NOT NULL DEFAULT 1,
+    "bossKills" DOUBLE PRECISION NOT NULL DEFAULT 100,
 
     CONSTRAINT "games_pkey" PRIMARY KEY ("id")
 );
@@ -385,6 +390,44 @@ CREATE TABLE "UserSuperPower" (
     CONSTRAINT "UserSuperPower_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "PaymentRequest" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "type" "PaymentRequestType" NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "paypalEmail" TEXT NOT NULL,
+    "paypalTransactionId" TEXT,
+    "status" "PaymentRequestStatus" NOT NULL DEFAULT 'pending',
+    "adminNotes" TEXT,
+    "proofImageUrl" TEXT,
+    "rejectionReason" TEXT,
+    "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processedAt" TIMESTAMP(3),
+    "processedBy" BIGINT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PaymentRequest_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CashTransaction" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "type" "CashTransactionType" NOT NULL,
+    "balanceType" TEXT NOT NULL DEFAULT 'cash',
+    "balanceBefore" DOUBLE PRECISION NOT NULL,
+    "balanceAfter" DOUBLE PRECISION NOT NULL,
+    "description" TEXT NOT NULL,
+    "paymentRequestId" INTEGER,
+    "metadata" JSONB DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CashTransaction_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Users_socialId_key" ON "Users"("socialId");
 
@@ -395,19 +438,13 @@ CREATE UNIQUE INDEX "Users_fcmToken_key" ON "Users"("fcmToken");
 CREATE UNIQUE INDEX "Users_token_key" ON "Users"("token");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Users_refreshToken_key" ON "Users"("refreshToken");
+
+-- CreateIndex
 CREATE INDEX "index_Users_on_id" ON "Users"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserTournament_userId_roomId_key" ON "UserTournament"("userId", "roomId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Wallets_pzpEvmWallet_key" ON "Wallets"("pzpEvmWallet");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Wallets_evmWalletPapi_key" ON "Wallets"("evmWalletPapi");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Wallets_tonWallet_key" ON "Wallets"("tonWallet");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "DailyUserTasks_user_id_key" ON "DailyUserTasks"("user_id");
@@ -475,14 +512,32 @@ CREATE UNIQUE INDEX "UserPurchase_userId_itemId_key" ON "UserPurchase"("userId",
 -- CreateIndex
 CREATE UNIQUE INDEX "UserSuperPower_userId_superPowerId_key" ON "UserSuperPower"("userId", "superPowerId");
 
+-- CreateIndex
+CREATE INDEX "PaymentRequest_userId_idx" ON "PaymentRequest"("userId");
+
+-- CreateIndex
+CREATE INDEX "PaymentRequest_status_idx" ON "PaymentRequest"("status");
+
+-- CreateIndex
+CREATE INDEX "PaymentRequest_type_idx" ON "PaymentRequest"("type");
+
+-- CreateIndex
+CREATE INDEX "PaymentRequest_requestedAt_idx" ON "PaymentRequest"("requestedAt");
+
+-- CreateIndex
+CREATE INDEX "CashTransaction_userId_idx" ON "CashTransaction"("userId");
+
+-- CreateIndex
+CREATE INDEX "CashTransaction_type_idx" ON "CashTransaction"("type");
+
+-- CreateIndex
+CREATE INDEX "CashTransaction_createdAt_idx" ON "CashTransaction"("createdAt");
+
 -- AddForeignKey
 ALTER TABLE "UserTournament" ADD CONSTRAINT "UserTournament_roomId_fkey" FOREIGN KEY ("roomId") REFERENCES "Rooms"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserTournamentScores" ADD CONSTRAINT "UserTournamentScores_userTournamentId_fkey" FOREIGN KEY ("userTournamentId") REFERENCES "UserTournament"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Wallets" ADD CONSTRAINT "Wallets_id_fkey" FOREIGN KEY ("id") REFERENCES "Users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DailyUserTasks" ADD CONSTRAINT "DailyUserTasks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "Users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -518,7 +573,7 @@ ALTER TABLE "user_spin_wheels" ADD CONSTRAINT "fk_rails_41c571ff54" FOREIGN KEY 
 ALTER TABLE "user_spin_wheels" ADD CONSTRAINT "fk_rails_d03a19184d" FOREIGN KEY ("spin_wheel_id") REFERENCES "spin_wheels"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "activities" ADD CONSTRAINT "fk_rails_53a863e245" FOREIGN KEY ("wallet_history_id") REFERENCES "UserWalletHistory"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "activities" ADD CONSTRAINT "activities_wallet_history_id_fkey" FOREIGN KEY ("wallet_history_id") REFERENCES "UserWalletHistory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "activities" ADD CONSTRAINT "fk_rails_7e11bb717f" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
@@ -537,3 +592,15 @@ ALTER TABLE "UserSuperPower" ADD CONSTRAINT "UserSuperPower_userId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "UserSuperPower" ADD CONSTRAINT "UserSuperPower_superPowerId_fkey" FOREIGN KEY ("superPowerId") REFERENCES "SuperPower"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PaymentRequest" ADD CONSTRAINT "PaymentRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PaymentRequest" ADD CONSTRAINT "PaymentRequest_processedBy_fkey" FOREIGN KEY ("processedBy") REFERENCES "admins"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CashTransaction" ADD CONSTRAINT "CashTransaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CashTransaction" ADD CONSTRAINT "CashTransaction_paymentRequestId_fkey" FOREIGN KEY ("paymentRequestId") REFERENCES "PaymentRequest"("id") ON DELETE SET NULL ON UPDATE CASCADE;

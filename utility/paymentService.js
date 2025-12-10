@@ -1,5 +1,6 @@
 import prisma from "../prisma/db.js";
 import { logActivity } from "./activityServices.js";
+import { updateCurrency, operations, transactiontype } from "./walletService.js";
 
 /**
  * Payment Service - Handles all cash transactions and PayPal payment requests
@@ -26,90 +27,6 @@ export const PAYMENT_CONFIG = {
  * @param {number} paymentRequestId - Related payment request ID (optional)
  * @returns {Promise<object>} Updated user and transaction record
  */
-export async function updateCashBalance(
-  userId,
-  amount,
-  type,
-  description,
-  balanceType = 'cash',
-  metadata = null,
-  paymentRequestId = null
-) {
-  // Validate amount
-  if (typeof amount !== 'number' || isNaN(amount)) {
-    throw new Error('Invalid amount');
-  }
-
-  // Get current user balance
-  const user = await prisma.users.findUnique({
-    where: { id: userId },
-    select: { 
-      id: true, 
-      cashBalance: true, 
-      bonusBalance: true,
-      status: true 
-    }
-  });
-
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  if (user.status === 2) {
-    throw new Error('User is blocked and cannot perform transactions');
-  }
-
-  const balanceField = balanceType === 'bonus' ? 'bonusBalance' : 'cashBalance';
-  const currentBalance = user[balanceField];
-  const newBalance = currentBalance + amount;
-
-  // Prevent negative balance
-  if (newBalance < 0) {
-    throw new Error(`Insufficient ${balanceType} balance. Current: $${currentBalance.toFixed(2)}, Required: $${Math.abs(amount).toFixed(2)}`);
-  }
-
-  // Update user balance and create transaction record atomically
-  const [updatedUser, transaction] = await prisma.$transaction([
-    prisma.users.update({
-      where: { id: userId },
-      data: {
-        [balanceField]: newBalance,
-        lastActive: Math.floor(Date.now() / 1000),
-      }
-    }),
-    prisma.cashTransaction.create({
-      data: {
-        userId,
-        amount,
-        type,
-        balanceType,
-        balanceBefore: currentBalance,
-        balanceAfter: newBalance,
-        description,
-        metadata: metadata || {},
-        paymentRequestId,
-      }
-    })
-  ]);
-
-  // Log activity
-  await logActivity(
-    userId,
-    'cash_transaction',
-    {
-      type,
-      amount,
-      balanceType,
-      balanceBefore: currentBalance,
-      balanceAfter: newBalance,
-      description
-    },
-    null,
-    null
-  );
-
-  return { user: updatedUser, transaction };
-}
 
 /**
  * Get user's current balances
@@ -121,7 +38,7 @@ export async function getUserBalance(userId) {
     where: { id: userId },
     select: {
       id: true,
-      cashBalance: true,
+      cash: true,
       bonusBalance: true,
       totalDeposited: true,
       totalWithdrawn: true,
@@ -135,9 +52,9 @@ export async function getUserBalance(userId) {
   }
 
   return {
-    cashBalance: parseFloat(user.cashBalance.toFixed(2)),
+    cash: parseFloat(user.cash.toFixed(2)),
     bonusBalance: parseFloat(user.bonusBalance.toFixed(2)),
-    totalBalance: parseFloat((user.cashBalance + user.bonusBalance).toFixed(2)),
+    totalBalance: parseFloat((user.cash+ user.bonusBalance).toFixed(2)),
     totalDeposited: parseFloat(user.totalDeposited.toFixed(2)),
     totalWithdrawn: parseFloat(user.totalWithdrawn.toFixed(2)),
     paypalEmail: user.paypalEmail,
@@ -208,7 +125,7 @@ export async function createWithdrawalRequest(userId, amount, paypalEmail) {
   // Get user's current balance
   const user = await prisma.users.findUnique({
     where: { id: userId },
-    select: { cashBalance: true }
+    select: { cash: true }
   });
 
   if (!user) {
@@ -224,8 +141,8 @@ export async function createWithdrawalRequest(userId, amount, paypalEmail) {
     throw new Error(`Maximum withdrawal amount is $${PAYMENT_CONFIG.MAX_WITHDRAWAL} per transaction`);
   }
 
-  if (amount > user.cashBalance) {
-    throw new Error(`Insufficient balance. Available: $${user.cashBalance.toFixed(2)}`);
+  if (amount > user.cash) {
+    throw new Error(`Insufficient balance. Available: $${user.cash.toFixed(2)}`);
   }
 
   // Check if PayPal email is provided
@@ -268,7 +185,7 @@ export async function createWithdrawalRequest(userId, amount, paypalEmail) {
           id: true,
           username: true,
           imageUrl: true,
-          cashBalance: true,
+          cash: true,
         }
       }
     }
@@ -364,14 +281,14 @@ export async function getUserPaymentRequests(userId, status = null) {
 export async function canAffordEntry(userId, entryFee) {
   const user = await prisma.users.findUnique({
     where: { id: userId },
-    select: { cashBalance: true, bonusBalance: true }
+    select: { cash: true, bonusBalance: true }
   });
 
   if (!user) {
     throw new Error('User not found');
   }
 
-  const totalBalance = user.cashBalance + user.bonusBalance;
+  const totalBalance = user.cash + user.bonusBalance;
   return totalBalance >= entryFee;
 }
 
@@ -385,7 +302,7 @@ export async function canAffordEntry(userId, entryFee) {
 export async function chargeGameEntry(userId, entryFee, gameMetadata = {}) {
   const user = await prisma.users.findUnique({
     where: { id: userId },
-    select: { cashBalance: true, bonusBalance: true, status: true }
+    select: { cash: true, bonusBalance: true, status: true }
   });
 
   if (!user) {
@@ -396,7 +313,7 @@ export async function chargeGameEntry(userId, entryFee, gameMetadata = {}) {
     throw new Error('User is blocked');
   }
 
-  const totalBalance = user.cashBalance + user.bonusBalance;
+  const totalBalance = user.cash + user.bonusBalance;
   if (totalBalance < entryFee) {
     throw new Error(`Insufficient balance. Required: $${entryFee.toFixed(2)}, Available: $${totalBalance.toFixed(2)}`);
   }
@@ -404,32 +321,34 @@ export async function chargeGameEntry(userId, entryFee, gameMetadata = {}) {
   let transactions = [];
   let remainingFee = entryFee;
 
-  // Use bonus balance first
+  // Use gems (bonus) first
   if (user.bonusBalance > 0 && remainingFee > 0) {
     const bonusToUse = Math.min(user.bonusBalance, remainingFee);
-    const bonusResult = await updateCashBalance(
+    const bonusResult = await updateCurrency(
       userId,
-      -bonusToUse,
-      'game_entry',
-      `Game entry fee (bonus): $${bonusToUse.toFixed(2)}`,
-      'bonus',
-      gameMetadata
+      bonusToUse,
+      'gems',
+      operations.debit,
+      transactiontype.matchEntry,
+      null,
+      'success'
     );
-    transactions.push(bonusResult.transaction);
+    transactions.push(bonusResult);
     remainingFee -= bonusToUse;
   }
 
-  // Use cash balance for remaining amount
+  // Use cash for remaining amount
   if (remainingFee > 0) {
-    const cashResult = await updateCashBalance(
+    const cashResult = await updateCurrency(
       userId,
-      -remainingFee,
-      'game_entry',
-      `Game entry fee (cash): $${remainingFee.toFixed(2)}`,
+      remainingFee,
       'cash',
-      gameMetadata
+      operations.debit,
+      transactiontype.matchEntry,
+      null,
+      'success'
     );
-    transactions.push(cashResult.transaction);
+    transactions.push(cashResult);
   }
 
   return {
@@ -447,14 +366,14 @@ export async function chargeGameEntry(userId, entryFee, gameMetadata = {}) {
  * @returns {Promise<object>} Transaction details
  */
 export async function awardGamePrize(userId, prizeAmount, gameMetadata = {}) {
-  const result = await updateCashBalance(
+  const result = await updateCurrency(
     userId,
     prizeAmount,
-    'game_win',
-    `Game prize: $${prizeAmount.toFixed(2)}`,
     'cash',
-    gameMetadata
+    operations.credit,
+    transactiontype.gameWinReward,
+    null,
+    'success'
   );
-
   return result;
 }

@@ -118,48 +118,69 @@ router.post("/updateOnchainTransaction", UserMiddleware, async function (req, re
 router.get("/wallet-history", UserMiddleware, async function (req, res) {
   try {
     const userId = req.userId;
-
-    const userWallet = await prisma.wallets.findUnique({
-      where: { id: userId },
-      select: {
-        pzpEvmWallet: true,
-      }
-    });
-
-    console.log("Fetching wallet history for user:", userId);
-    
-
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    // Get total count
-    const totalCount = await prisma.userWalletHistory.count({
-      where: { user_id: userId },
-    });
+    // Fetch cash transactions
+    const [cashTotal, cashHistory] = await Promise.all([
+      prisma.cashTransaction.count({ where: { userId } }),
+      prisma.cashTransaction.findMany({
+        where: { userId },
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      })
+    ]);
 
-    // Get paginated records
-    let history = await prisma.userWalletHistory.findMany({
-      where: { user_id: userId },
-      skip: offset,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    });
+    // Fetch gems/virtual currency transactions
+    const [gemsTotal, gemsHistory] = await Promise.all([
+      prisma.userTransactions.count({ where: { user_id: userId } }),
+      prisma.userTransactions.findMany({
+        where: { user_id: userId },
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      })
+    ]);
 
-    // Add slug to each entry
-    history = history.map((item) => ({
-      ...item,
-      slug: numberToSlug(item.id),
+    // Normalize and merge histories
+    const cashMapped = cashHistory.map(item => ({
+      id: item.id,
+      type: item.type,
+      amount: item.amount,
+      currency: item.balanceType === 'bonus' ? 'bonus' : 'cash',
+      description: item.description,
+      balanceBefore: item.balanceBefore,
+      balanceAfter: item.balanceAfter,
+      createdAt: item.createdAt,
+      source: 'cash',
+      metadata: item.metadata
     }));
+    const gemsMapped = gemsHistory.map(item => ({
+      id: item.id,
+      type: item.transaction_type,
+      amount: item.amount,
+      currency: item.currency,
+      description: item.operation,
+      balanceBefore: null,
+      balanceAfter: null,
+      createdAt: item.createdAt,
+      source: 'gems',
+      metadata: {}
+    }));
+
+    // Merge and sort by date desc
+    const merged = [...cashMapped, ...gemsMapped].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const paged = merged.slice(0, limit); // Only show up to limit per page
 
     return res.status(200).json({
       success: true,
       data: {
-        history,
-        userWallet: userWallet?.pzpEvmWallet || null,
+        history: paged,
         pagination: {
-          totalRecords: totalCount,
-          pages: Math.ceil(totalCount / limit),
+          totalRecords: cashTotal + gemsTotal,
+          pages: Math.ceil((cashTotal + gemsTotal) / limit),
         },
       },
     });

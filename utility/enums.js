@@ -8,8 +8,8 @@ export const PlayerRole = {
 };
 
 
-export const GAME_ENTRY_TYPE = ['free', 'virtual1', 'virtual2'];
-export const CURRENCY_TYPE = ['virtual1', 'virtual2'];
+export const GAME_ENTRY_TYPE = ['free', 'gems', 'cash'];
+export const CURRENCY_TYPE = ['gems', 'cash'];
 export const USER_ROLE = ['user', 'super user',];
 export const STATUS = ['Active', 'Inactive', 'Blocked', 'Restricted'];
 export const LOGIN_TYPE = ['guest', 'apple', 'google', 'telegram'];

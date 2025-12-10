@@ -187,7 +187,7 @@ router.post("/login", validators('USER_SIGNUP'), async (req, res) => {
       });
 
       // Create a random wallet for the user
-      await createUserWallet(user.id);
+      // await createUserWallet(user.id);
 
       // Generate and send JWT token
       const token = await generateToken({ userId: user.id });
@@ -224,12 +224,35 @@ router.post("/login", validators('USER_SIGNUP'), async (req, res) => {
       let reward = await prisma.master.findUnique({
         where: { key: "joinReward" },
       });
-      await bank.updateCurrency(uid, parseInt(reward.data1.virtual1), "virtual1", "credit", bank.transactiontype.loginBonus);
-
+      // Assign gems (virtual1) and create transaction
+      const gemsReward = Number(reward?.data1?.gems) || 0;
+      const cashReward = Number(reward?.data1?.cash) || 0;
+      if (gemsReward > 0) {
+        await bank.updateCurrency(
+          uid,
+          gemsReward,
+          "gems",
+          "credit",
+          bank.transactiontype.loginBonus,
+          null,
+          "success"
+        );
+      }
+      if (cashReward > 0) {
+        await bank.updateCurrency(
+          uid,
+          cashReward,
+          "cash",
+          "credit",
+          bank.transactiontype.loginBonus,
+          null,
+          "success"
+        );
+      }
       await logActivity(
         uid,
         'login',
-        { message: `User logged in successfully and get joinReward ${reward.data1.virtual1}` },
+        { message: `User logged in successfully and get joinReward: Gems ${reward?.data1?.gems || 0}, Cash $${reward?.data1?.cash || 0}` },
         null,
         null
       );

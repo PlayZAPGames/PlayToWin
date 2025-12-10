@@ -40,7 +40,8 @@ model Users {
   isBlocked    Boolean @default(false) // For block user
 
   // Currency - Cash-based system
-  cashBalance      Float    @default(0)     // Withdrawable USD balance
+  cash      Float    @default(0)     // Withdrawable USD balance
+  gems      Float    @default(0)     // Withdrawable USD balance
   bonusBalance     Float    @default(0)     // Non-withdrawable promotional balance
   totalDeposited   Float    @default(0)     // Lifetime deposits
   totalWithdrawn   Float    @default(0)     // Lifetime withdrawals
@@ -61,13 +62,9 @@ model Users {
   Tranactions      UserTransactions[]
   PaymentRequests  PaymentRequest[]
   CashTransactions CashTransaction[]
-  // XP               UserXpReward?
-  // GameXpLogs       UserXpLogs[]
   DailyrewardUser  DailyRewards?
   UserReferrer     UserReferral[]      @relation("UserReferrer")
   UserReferee      UserReferral?       @relation("UserReferee")
-  // UserSpinner     UserSpinner?
-  // ZClubLog         ZClubLogs[]
   DailyTasks       DailyUserTasks[]
   user_spin_wheels user_spin_wheels[]
   UserPurchase     UserPurchase[]
@@ -78,6 +75,7 @@ model Users {
 
   RewardHistory UserGameRewardHistory[] @relation("UserToRewardHistory")
   activities    activities[]
+  UserWalletHistory UserWalletHistory[]
 
   @@index([id], map: "index_Users_on_id")
 }
@@ -201,27 +199,26 @@ model UserTransactions {
   updatedAt        DateTime @updatedAt
 }
 
-// DEPRECATED: Crypto wallet history - replaced with CashTransaction model
-// model UserWalletHistory {
-//   id               Int          @id @default(autoincrement())
-//   user_id          Int
-//   item_id          Int?
-//   from_amount      Float
-//   from_currency    String
-//   operation        String
-//   transaction_hash String?
-//   transaction_type String       @default("")
-//   status           String?
-//   to_amount        Float?
-//   to_currency      String?
-//   to_address       String?
-//   currency         String?
-//   amount           Float?
-//   User             Users        @relation(fields: [user_id], references: [id])
-//   activities       activities[] @relation("UserWalletHistoryToActivities") // Named relation for clarity
-//   createdAt        DateTime     @default(now())
-//   updatedAt        DateTime     @updatedAt
-// }
+model UserWalletHistory {
+  id               Int          @id @default(autoincrement())
+  user_id          Int
+  item_id          Int?
+  from_amount      Float
+  from_currency    String
+  operation        String
+  transaction_hash String?
+  transaction_type String       @default("")
+  status           String?
+  to_amount        Float?
+  to_currency      String?
+  to_address       String?
+  currency         String?
+  amount           Float?
+  User             Users        @relation(fields: [user_id], references: [id])
+  activities       activities[] @relation("UserWalletHistoryToActivities") // Named relation for clarity
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
 
 model Master {
   key   String  @unique
@@ -350,8 +347,7 @@ model activities {
   refId             Int?
   activity_type     String?
   wallet_history_id Int?
-  // DEPRECATED: wallet_history relation removed (crypto system replaced with CashTransaction)
-  // wallet_history    UserWalletHistory? @relation("UserWalletHistoryToActivities", fields: [wallet_history_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_53a863e245")
+  userWalletHistory UserWalletHistory? @relation("UserWalletHistoryToActivities", fields: [wallet_history_id], references: [id])
   users             Users?             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_7e11bb717f")
 
   createdAt DateTime @default(now())

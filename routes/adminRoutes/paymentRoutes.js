@@ -4,7 +4,6 @@ import { validators } from "../../middleware/validateResource/index.js";
 import { handleRequest } from "../../helpers/requestHandler/asyncHandler.js";
 import { makeResponse, statusCodes, responseMessages } from '../../helpers/index.js';
 import prisma from "../../prisma/db.js";
-import { updateCashBalance } from "../../utility/paymentService.js";
 import { logActivity } from "../../utility/activityServices.js";
 
 const { SUCCESS, BAD_REQUEST, SERVER_ERROR } = statusCodes;
@@ -31,7 +30,8 @@ router.get("/admin/payments/pending", AdminMiddleware, handleRequest(async (req,
           id: true,
           username: true,
           imageUrl: true,
-          cashBalance: true,
+          cash: true,
+          gems: true,
           bonusBalance: true,
           totalDeposited: true,
           totalWithdrawn: true,
@@ -72,7 +72,7 @@ router.get("/admin/payments/history", AdminMiddleware, handleRequest(async (req,
             id: true,
             username: true,
             imageUrl: true,
-            cashBalance: true,
+            cash: true,
           }
         },
         ProcessedByAdmin: {
@@ -111,7 +111,7 @@ router.get("/admin/payments/request/:id", AdminMiddleware, handleRequest(async (
           id: true,
           username: true,
           imageUrl: true,
-          cashBalance: true,
+          cash: true,
           bonusBalance: true,
           totalDeposited: true,
           totalWithdrawn: true,
@@ -178,7 +178,7 @@ router.post("/admin/payments/:id/approve",
           select: {
             id: true,
             username: true,
-            cashBalance: true,
+            cash: true,
           }
         }
       }
@@ -211,7 +211,7 @@ router.post("/admin/payments/:id/approve",
         await tx.users.update({
           where: { id: request.userId },
           data: {
-            cashBalance: { increment: request.amount },
+            cash: { increment: request.amount },
             totalDeposited: { increment: request.amount },
           }
         });
@@ -223,8 +223,8 @@ router.post("/admin/payments/:id/approve",
             amount: request.amount,
             type: 'deposit',
             balanceType: 'cash',
-            balanceBefore: request.User.cashBalance,
-            balanceAfter: request.User.cashBalance + request.amount,
+            balanceBefore: request.User.cash,
+            balanceAfter: request.User.cash + request.amount,
             description: `Deposit approved: $${request.amount.toFixed(2)}`,
             paymentRequestId: requestId,
             metadata: { 
@@ -297,7 +297,7 @@ router.post("/admin/payments/:id/complete",
         User: {
           select: {
             id: true,
-            cashBalance: true,
+            cash: true,
           }
         }
       }
@@ -331,7 +331,7 @@ router.post("/admin/payments/:id/complete",
       await tx.users.update({
         where: { id: request.userId },
         data: {
-          cashBalance: { decrement: request.amount },
+          cash: { decrement: request.amount },
           totalWithdrawn: { increment: request.amount },
         }
       });
@@ -343,8 +343,8 @@ router.post("/admin/payments/:id/complete",
           amount: -request.amount, // Negative for withdrawal
           type: 'withdrawal',
           balanceType: 'cash',
-          balanceBefore: request.User.cashBalance,
-          balanceAfter: request.User.cashBalance - request.amount,
+          balanceBefore: request.User.cash,
+          balanceAfter: request.User.cash - request.amount,
           description: `Withdrawal completed: $${request.amount.toFixed(2)}`,
           paymentRequestId: requestId,
           metadata: {
@@ -424,49 +424,7 @@ router.post("/admin/payments/:id/reject",
   })
 );
 
-/**
- * POST /admin/users/:userId/adjust-balance
- * Manually adjust user's balance (admin credit/debit)
- */
-router.post("/admin/users/:userId/adjust-balance",
-  AdminMiddleware,
-  validators('ADJUST_BALANCE'),
-  handleRequest(async (req, res) => {
-    const userId = parseInt(req.params.userId);
-    const { amount, reason, balanceType = 'cash' } = req.body;
-    const adminId = req.user.id;
 
-    const amountFloat = parseFloat(amount);
-    const type = amountFloat > 0 ? 'admin_credit' : 'admin_debit';
-
-    const result = await updateCashBalance(
-      userId,
-      amountFloat,
-      type,
-      reason || `Admin adjustment by admin ID: ${adminId}`,
-      balanceType,
-      { adjustedBy: adminId }
-    );
-
-    await logActivity(
-      userId,
-      'balance_adjusted',
-      {
-        amount: amountFloat,
-        balanceType,
-        reason,
-        adjustedBy: adminId,
-      },
-      null,
-      null
-    );
-
-    return makeResponse(res, SUCCESS, true, "Balance adjusted successfully", {
-      newBalance: result.user[balanceType === 'bonus' ? 'bonusBalance' : 'cashBalance'],
-      transaction: result.transaction,
-    });
-  })
-);
 
 /**
  * GET /admin/payments/statistics

@@ -194,7 +194,7 @@ router.get("/payments/stats", UserMiddleware, handleRequest(async (req, res) => 
     select: {
       totalDeposited: true,
       totalWithdrawn: true,
-      cashBalance: true,
+      cash: true,
       bonusBalance: true,
     }
   });
@@ -229,9 +229,9 @@ router.get("/payments/stats", UserMiddleware, handleRequest(async (req, res) => 
 
   return makeResponse(res, SUCCESS, true, "Payment statistics", {
     currentBalance: {
-      cash: parseFloat(user.cashBalance.toFixed(2)),
+      cash: parseFloat(user.cash.toFixed(2)),
       bonus: parseFloat(user.bonusBalance.toFixed(2)),
-      total: parseFloat((user.cashBalance + user.bonusBalance).toFixed(2)),
+      total: parseFloat((user.cash + user.bonusBalance).toFixed(2)),
     },
     lifetime: {
       deposited: parseFloat(user.totalDeposited.toFixed(2)),

@@ -145,13 +145,13 @@ async function getBalance(userId) {
     err.statusCode = statusCodes.BAD_REQUEST;
     throw err;
   }
-  return { "virtual1": user.virtual1, "virtual2": user.virtual2 === undefined ? 0 : user.virtual2 };
+  return { "cash": user.cash, "gems": user.gems === undefined ? 0 : user.gems };
 }
 
 
 const currencies = Object.freeze({
-  virtual1: "virtual1",
-  virtual2: "virtual2",
+  gems: "gems",
+  cash: "cash",
 });
 
 const operations = Object.freeze({
