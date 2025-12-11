@@ -4,7 +4,7 @@ import { handleRequest } from "../../helpers/requestHandler/asyncHandler.js";
 import { makeResponse, responseMessages, statusCodes } from "../../helpers/index.js";
 import { numberToSlug, slugToNumber, slugType } from "../../utility/cypher.js";
 import { validators } from '../../middleware/validateResource/index.js';
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, subWeeks } from "date-fns";
+const { SUCCESS, BAD_REQUEST } = statusCodes;
 
 
 const router = express.Router();
@@ -13,38 +13,13 @@ const router = express.Router();
 router.post('/game', validators('ADD_GAME'), handleRequest(async (req, res) => {
   const {
     gameName,
-    serverGameName,
-    keyboardGameName,
-    url,
-    miniAppUrl,
-    iMessage_Solo,
-    entryFee,
-    currencyType,
-    winningCurrencyType,
-    kills,
-    timeBonus,
-    bossKills,
-    rank1,
-    rank2,
-    rank3,
-    rank4
   } = req.body;
 
 
   let game = await prisma.games.create({
     data: {
       gameName,
-      serverGameName,
-      keyboardGameName,
-      url,
-      miniAppUrl,
-      iMessage_Solo,
-      entryFee,
-      currencyType,
-      winningCurrencyType,
-      kills,
-      timeBonus,
-      bossKills
+   
     }
   });
 
@@ -207,6 +182,28 @@ router.get("/game/leaderboard", handleRequest(async function (req, res) {
   });
 }));
 
+
+router.post("/game/tournament-block", validators('ADD_TOURNAMENT'), handleRequest(async (req, res) => {
+  const {name, gameId, entryFee, currencyType, prizePool, players, adsEnabled } = req.body;
+
+
+  // Create tournament block
+  const block = await prisma.tournamentBlock.create({
+    data: {
+      name,
+      gameId,
+      entryFee,
+      currencyType,
+      prizePool,
+      players,
+      adsEnabled: !!adsEnabled,
+      status: "active",
+      resultAnnounced: false,
+    }
+  });
+
+  return makeResponse(res, SUCCESS, true, "Tournament block created",  block );
+}));
 
 
 export default router;

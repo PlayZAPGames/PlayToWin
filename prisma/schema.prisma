@@ -80,30 +80,34 @@ model Users {
   @@index([id], map: "index_Users_on_id")
 }
 
+
 model Rooms {
-  id              Int              @id @default(autoincrement())
-  name            String?
-  iMessage        String?
-  chatId          String?
-  maxPlayers      Int              @default(4)
-  gameId          Int?
-  entryFee        Int?
-  currencyType    String?
-  released        Boolean?         @default(false)
-  freeEntry       Boolean          @default(false) // If true, no reward will win
-  releaseResponse String?
-  startTime       DateTime?
-  releaseTime     DateTime?
-  UserTournament  UserTournament[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                Int              @id @default(autoincrement())
+  name              String?
+  maxPlayers        Int              @default(4)
+  currentPlayers    Int              @default(0)    // snapshot of joined players (atomic increment)
+  gameId            Int?
+  tournamentBlockId Int?             // NEW: link to TournamentBlock template
+  entryFee          Float?
+  currencyType      String?
+  released          Boolean?         @default(false)
+  freeEntry         Boolean          @default(false)
+  releaseResponse   String?
+  startTime         DateTime?
+  releaseTime       DateTime?
+  UserTournament    UserTournament[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  // index for fast lookup of open rooms per block
+  @@index([tournamentBlockId, released, currentPlayers])
+  tournamentBlock   TournamentBlock? @relation(fields: [tournamentBlockId], references: [id])
+
 }
 
 model UserTournament {
   id                   Int                    @id @default(autoincrement())
   userId               Int
-  tgId                 BigInt                 @default(0)
-  iMessage             String                 @default("")
   userName             String
   banned               Boolean                @default(false)
   score                Int                    @default(0)
@@ -111,6 +115,9 @@ model UserTournament {
   roomId               Int
   room                 Rooms                  @relation(fields: [roomId], references: [id])
   UserTournamentScores UserTournamentScores[]
+  tournamentBlockId Int
+  tournamentBlock   TournamentBlock @relation(fields: [tournamentBlockId], references: [id])
+  scoreSubmitted    Boolean @default(false)
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
 
@@ -220,6 +227,25 @@ model UserWalletHistory {
   updatedAt        DateTime     @updatedAt
 }
 
+model TournamentBlock {
+  id            Int      @id @default(autoincrement())
+  name          String
+  gameId        Int
+  game          games    @relation(fields: [gameId], references: [id])
+  entryFee      Float
+  currencyType  String   // 'gems', 'cash', or 'ads'
+  prizePool     Float
+  players    Int
+  status        String   // 'active', 'completed', 'coming_soon'
+  adsEnabled    Boolean  @default(false)
+  resultAnnounced Boolean @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  UserTournaments UserTournament[]
+  Rooms            Rooms[]
+}
+
 model Master {
   key   String  @unique
   data1 Json?
@@ -288,7 +314,7 @@ model UserGameRewardHistory {
   roomId    Int?
   reward    Float
   rank      String?
-  currency  String // e.g., "virtual1", "virtual1", "pzp_core"
+  currency  String // e.g., "gems", "cash", "pzp_core"
   reason    String? // e.g., "win", "bonus", "referral"
   createdAt DateTime @default(now())
   User      Users    @relation(fields: [userId], references: [id], name: "UserToRewardHistory")
@@ -297,17 +323,8 @@ model UserGameRewardHistory {
 model games {
   id                  Int     @id @default(autoincrement())
   gameName            String
-  serverGameName      String?
-  keyboardGameName    String?
-  url                 String?
-  miniAppUrl          String?
-  iMessage_Solo       String?
-  entryFee            Float
-  currencyType        String  @default("virtual1") // "free", "virtual1", "virtual2"
-  winningCurrencyType String  @default("virtual2") //"virtual1", "virtual2"
-  kills               Float   @default(1)
-  timeBonus           Float   @default(1)
-  bossKills           Float   @default(100)
+  imageIndex        Int?
+  TournamentBlocks TournamentBlock[] // Add this line
 }
 
 
@@ -317,8 +334,8 @@ model spin_wheels {
   name             String?            @db.VarChar
   is_disabled      Boolean?           @default(false)
   perc             Float?             @default(0.0)
-  virtual1         Float?             @default(0.0)
-  virtual2         Float?             @default(0.0)
+  gems         Float?             @default(0.0)
+  cash         Float?             @default(0.0)
   user_spin_wheels user_spin_wheels[]
   created_at       DateTime           @default(now())
   updated_at       DateTime           @updatedAt
@@ -331,8 +348,8 @@ model user_spin_wheels {
   is_claimed    Boolean?     @default(false)
   created_at    DateTime     @db.Timestamp(6)
   updated_at    DateTime     @db.Timestamp(6)
-  virtual1      Float?       @default(0.0)
-  virtual2      Float?       @default(0.0)
+  gems      Float?       @default(0.0)
+  cash      Float?       @default(0.0)
   Users         Users?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_41c571ff54")
   spin_wheels   spin_wheels? @relation(fields: [spin_wheel_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rails_d03a19184d")
 
@@ -365,7 +382,7 @@ model StoreItem {
   name         String
   type         ItemType
   price        Int? // cost to buy
-  currencyType String // e.g. "virtual1" or "virtual2"
+  currencyType String // e.g. "gems" or "cash"
   description String?
   baseLevel   Int         @default(1)
   maxLevel    Int         @default(3)

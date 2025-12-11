@@ -336,19 +336,32 @@ export const validationSchema = (action) => {
     }
     case "ADD_GAME": {
       return {
-        gameName: Joi.string().required().valid('LudoRoyal'),
-        serverGameName: Joi.string().allow(null).optional(),
-        keyboardGameName: Joi.string().allow(null).optional(),
-        url: Joi.string().allow(null).optional(),
-        miniAppUrl: Joi.string().allow(null).optional(),
-        iMessage_Solo: Joi.string().allow(null).optional(),
+        gameName: Joi.string().required(),
+        imageIndex: Joi.number().integer().min(0).max(25).optional(),
+        // serverGameName: Joi.string().allow(null).optional(),
+        // keyboardGameName: Joi.string().allow(null).optional(),
+        // url: Joi.string().allow(null).optional(),
+        // miniAppUrl: Joi.string().allow(null).optional(),
+        // iMessage_Solo: Joi.string().allow(null).optional(),
+        // entryFee: Joi.number().required(),
+        // currencyType: Joi.string().required().valid(...GAME_ENTRY_TYPE),
+        // winningCurrencyType: Joi.string().required().valid(...CURRENCY_TYPE),
+        // kills: Joi.number().required(),
+        // timeBonus: Joi.number().required(),
+        // bossKills: Joi.number().required()
+      
+      };
+
+    }
+    case "ADD_TOURNAMENT": {
+      return {
+        name: Joi.string().required(),
+        gameId: Joi.number().required(),
         entryFee: Joi.number().required(),
         currencyType: Joi.string().required().valid(...GAME_ENTRY_TYPE),
-        winningCurrencyType: Joi.string().required().valid(...CURRENCY_TYPE),
-        kills: Joi.number().required(),
-        timeBonus: Joi.number().required(),
-        bossKills: Joi.number().required()
-      
+        prizePool: Joi.number().required(),
+        players: Joi.number().required(),
+        adsEnabled: Joi.boolean().required()
       };
 
     }

@@ -29,6 +29,7 @@ CREATE TABLE "Users" (
     "notification" BOOLEAN NOT NULL DEFAULT true,
     "isBlocked" BOOLEAN NOT NULL DEFAULT false,
     "cash" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "gems" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "bonusBalance" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "totalDeposited" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "totalWithdrawn" DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -79,6 +80,8 @@ CREATE TABLE "UserTournament" (
     "score" INTEGER NOT NULL DEFAULT 0,
     "scoreAry" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     "roomId" INTEGER NOT NULL,
+    "tournamentBlockId" INTEGER NOT NULL,
+    "scoreSubmitted" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -190,6 +193,25 @@ CREATE TABLE "UserWalletHistory" (
 );
 
 -- CreateTable
+CREATE TABLE "TournamentBlock" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "gameId" INTEGER NOT NULL,
+    "entryFee" DOUBLE PRECISION NOT NULL,
+    "currencyType" TEXT NOT NULL,
+    "prizePool" DOUBLE PRECISION NOT NULL,
+    "maxPlayers" INTEGER NOT NULL,
+    "currentPlayers" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL,
+    "adsEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "resultAnnounced" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TournamentBlock_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Master" (
     "key" TEXT NOT NULL,
     "data1" JSONB,
@@ -277,8 +299,8 @@ CREATE TABLE "games" (
     "miniAppUrl" TEXT,
     "iMessage_Solo" TEXT,
     "entryFee" DOUBLE PRECISION NOT NULL,
-    "currencyType" TEXT NOT NULL DEFAULT 'virtual1',
-    "winningCurrencyType" TEXT NOT NULL DEFAULT 'virtual2',
+    "currencyType" TEXT NOT NULL DEFAULT 'gems',
+    "winningCurrencyType" TEXT NOT NULL DEFAULT 'cash',
     "kills" DOUBLE PRECISION NOT NULL DEFAULT 1,
     "timeBonus" DOUBLE PRECISION NOT NULL DEFAULT 1,
     "bossKills" DOUBLE PRECISION NOT NULL DEFAULT 100,
@@ -292,8 +314,8 @@ CREATE TABLE "spin_wheels" (
     "name" VARCHAR,
     "is_disabled" BOOLEAN DEFAULT false,
     "perc" DOUBLE PRECISION DEFAULT 0.0,
-    "virtual1" DOUBLE PRECISION DEFAULT 0.0,
-    "virtual2" DOUBLE PRECISION DEFAULT 0.0,
+    "gems" DOUBLE PRECISION DEFAULT 0.0,
+    "cash" DOUBLE PRECISION DEFAULT 0.0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -308,8 +330,8 @@ CREATE TABLE "user_spin_wheels" (
     "is_claimed" BOOLEAN DEFAULT false,
     "created_at" TIMESTAMP(6) NOT NULL,
     "updated_at" TIMESTAMP(6) NOT NULL,
-    "virtual1" DOUBLE PRECISION DEFAULT 0.0,
-    "virtual2" DOUBLE PRECISION DEFAULT 0.0,
+    "gems" DOUBLE PRECISION DEFAULT 0.0,
+    "cash" DOUBLE PRECISION DEFAULT 0.0,
 
     CONSTRAINT "user_spin_wheels_pkey" PRIMARY KEY ("id")
 );
@@ -537,6 +559,9 @@ CREATE INDEX "CashTransaction_createdAt_idx" ON "CashTransaction"("createdAt");
 ALTER TABLE "UserTournament" ADD CONSTRAINT "UserTournament_roomId_fkey" FOREIGN KEY ("roomId") REFERENCES "Rooms"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "UserTournament" ADD CONSTRAINT "UserTournament_tournamentBlockId_fkey" FOREIGN KEY ("tournamentBlockId") REFERENCES "TournamentBlock"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "UserTournamentScores" ADD CONSTRAINT "UserTournamentScores_userTournamentId_fkey" FOREIGN KEY ("userTournamentId") REFERENCES "UserTournament"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -553,6 +578,9 @@ ALTER TABLE "UserTransactions" ADD CONSTRAINT "UserTransactions_user_id_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "UserWalletHistory" ADD CONSTRAINT "UserWalletHistory_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "Users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TournamentBlock" ADD CONSTRAINT "TournamentBlock_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "games"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "NotificationsData" ADD CONSTRAINT "NotificationsData_id_fkey" FOREIGN KEY ("id") REFERENCES "Notifications"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

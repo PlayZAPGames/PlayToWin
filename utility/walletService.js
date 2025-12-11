@@ -24,12 +24,6 @@ async function updateCurrency(userId, amount, currency, operation, transactionTy
 
   let to_currency = currency;
 
-  if (transactionType === 'v1ToCore') {
-    to_currency = 'virtual2';
-  }
-
-
-
   // Validate the currency parameter
   if (!(currency in currencies)) {
     return { errorCode: 1001, message: "Invalid currency type" };
@@ -162,13 +156,10 @@ const operations = Object.freeze({
 });
 
 const transactiontype = Object.freeze({
-  shop_item_purchase: "shop_item_purchase",
-  virtual1_core_conversion: "v1ToCore",
   matchEntry: "matchEntry",
   dailyRewards: "dailyRewards",
   referral: "referral",
   spinWheel: "spinWheel",
-  zclub: "zclub",
   loginBonus: "loginBonus",
   withdrawCore: "withdrawCore",
   withdrawPzp: "withdrawPzp",
@@ -180,8 +171,6 @@ const transactiontype = Object.freeze({
   avatar: "boughtAvatar",
   emoji: "boughtEmoji",
   weeklyReward: "weeklyReward",
-  coreToBsc: "coreToBsc",
-  bscToCore: "bscToCore",
 
 });
 

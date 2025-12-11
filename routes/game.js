@@ -160,279 +160,446 @@ router.get("/game/fame", UserMiddleware, handleRequest(async function (req, res)
 }));
 
 // POST /game/play
-router.post("/game/play", UserMiddleware, validators('GAME_PLAY'), handleRequest(async (req, res) => {
+// router.post("/game/play", UserMiddleware, validators('GAME_PLAY'), handleRequest(async (req, res) => {
 
-  let canWinReward = true;
-  const gameData = await prisma.games.findUnique({ where: { id: req.body.gameId } })
+//   let canWinReward = true;
+//   const gameData = await prisma.games.findUnique({ where: { id: req.body.gameId } })
 
-  if (!gameData) {
-    return makeResponse(res, BAD_REQUEST, false, `Game not available.`);
-  }
-  // const reward = 0;
+//   if (!gameData) {
+//     return makeResponse(res, BAD_REQUEST, false, `Game not available.`);
+//   }
+//   // const reward = 0;
 
-  // 1. Find active airdrop season
-  // const activeSeason = await prisma.airdropSeason.findFirst({
-  //   where: {
-  //     status: 0,
-  //     start_time: { lte: new Date() },
-  //     end_time: { gte: new Date() }
-  //   }
-  // });
+//   // 1. Find active airdrop season
+//   // const activeSeason = await prisma.airdropSeason.findFirst({
+//   //   where: {
+//   //     status: 0,
+//   //     start_time: { lte: new Date() },
+//   //     end_time: { gte: new Date() }
+//   //   }
+//   // });
 
-  // if (activeSeason) {
+//   // if (activeSeason) {
 
-  //   if (activeSeason.total_supply - (activeSeason.claimed + reward) >= 0) {
+//   //   if (activeSeason.total_supply - (activeSeason.claimed + reward) >= 0) {
 
-  //     canWinReward = true;
-  //   }
-  // }
-
-
-
-  let room = await prisma.rooms.findFirst({
-    where: {
-      name: req.body.roomName,
-    },
-    orderBy: { createdAt: "asc" },
-  });
+//   //     canWinReward = true;
+//   //   }
+//   // }
 
 
 
-  // Step 3: Create new room if needed
-  if (!room) {
-    room = await prisma.rooms.create({
-      data: {
-        name: req.body.roomName,
-        gameId: gameData.id,
-        entryFee: gameData.entryFee,
-        freeEntry: canWinReward ? false : true,
-        currencyType: gameData.currencyType,
-        startTime: new Date(),
-        // maxPlayers: req.body.maxPlayers
-      },
-    });
-  }
-
-  // Step 4: Create UserTournament entry
-  const existingTournament = await prisma.userTournament.findUnique({
-    where: {
-      userId_roomId: {
-        userId: req.user.id,
-        roomId: room.id,
-      },
-    },
-  });
-
-  let userTournament;
-    // console.log("existingTournament", existingTournament);
+//   let room = await prisma.rooms.findFirst({
+//     where: {
+//       name: req.body.roomName,
+//     },
+//     orderBy: { createdAt: "asc" },
+//   });
 
 
-  if (existingTournament) {
-    userTournament = existingTournament;
-  } else {
+
+//   // Step 3: Create new room if needed
+//   if (!room) {
+//     room = await prisma.rooms.create({
+//       data: {
+//         name: req.body.roomName,
+//         gameId: gameData.id,
+//         entryFee: gameData.entryFee,
+//         freeEntry: canWinReward ? false : true,
+//         currencyType: gameData.currencyType,
+//         startTime: new Date(),
+//         // maxPlayers: req.body.maxPlayers
+//       },
+//     });
+//   }
+
+//   // Step 4: Create UserTournament entry
+//   const existingTournament = await prisma.userTournament.findUnique({
+//     where: {
+//       userId_roomId: {
+//         userId: req.user.id,
+//         roomId: room.id,
+//       },
+//     },
+//   });
+
+//   let userTournament;
+//     // console.log("existingTournament", existingTournament);
 
 
-    // console.log("req.user.id", req.user.id);
-    // console.log("room.id", room.id);
-
-    // Step 5: Create UserTournament entry
-    userTournament = await prisma.userTournament.create({
-      data: {
-        userId: req.user.id,
-        roomId: room.id,
-        userName: req.user.username || "Player",
-      },
-    });
+//   if (existingTournament) {
+//     userTournament = existingTournament;
+//   } else {
 
 
-    // Step 6: Deduct entry fees from user wallet 
-    // console.log("userTournament.id", userTournament.id);
+//     // console.log("req.user.id", req.user.id);
+//     // console.log("room.id", room.id);
+
+//     // Step 5: Create UserTournament entry
+//     userTournament = await prisma.userTournament.create({
+//       data: {
+//         userId: req.user.id,
+//         roomId: room.id,
+//         userName: req.user.username || "Player",
+//       },
+//     });
+
+
+//     // Step 6: Deduct entry fees from user wallet 
+//     // console.log("userTournament.id", userTournament.id);
     
 
-    if (canWinReward && gameData.currencyType !== 'free') {
-      await bank.updateCurrency(
-        req.user.id,
-        gameData.entryFee,
-        gameData.currencyType,
-        "debit",
-        bank.transactiontype.matchEntry
-      );
-    } else {
+//     if (canWinReward && gameData.currencyType !== 'free') {
+//       await bank.updateCurrency(
+//         req.user.id,
+//         gameData.entryFee,
+//         gameData.currencyType,
+//         "debit",
+//         bank.transactiontype.matchEntry
+//       );
+//     } else {
 
-      await logActivity(
-        req.user.id,
-        "matchEntry",
-        { message: "Users started playing free game ", amount: 0, },
-        null,
-        null
-      );
+//       await logActivity(
+//         req.user.id,
+//         "matchEntry",
+//         { message: "Users started playing free game ", amount: 0, },
+//         null,
+//         null
+//       );
+//     }
+
+
+//   }
+
+//     //     // 🔹 Trigger blockchain API in background
+//     // const { walletAddress, user_papi } = await getUserWallet(req.user.id);
+//     // cryptoMining({
+//     //   walletAddress,
+//     //   functionName: 'MatchInit',
+//     //   user_papi
+//     // }).catch(err => {
+//     //   console.error(`Blockchain call failed for ${req.user.id}:`, err.message);
+//     // });
+
+
+//   return makeResponse(res, SUCCESS, true, responseMessages.ROOM_CREATED, {
+//     roomId: room.id,
+//     userTournamentId: userTournament.id,
+//     // reamingSupply: activeSeason ? activeSeason.total_supply - (activeSeason?.claimed + reward) : 0,
+//     canWinReward: canWinReward > 0 ? true : false,
+//   });
+
+// }));
+
+router.post("/game/play", UserMiddleware, async (req, res) => {
+    // const { userId, tournamentBlockId } = req.body;
+
+    const userId = req.user.id;
+    const { tournamentBlockId } = req.body;
+
+    if (!userId || !tournamentBlockId)
+        return res.status(400).json({ error: "userId & tournamentBlockId required" });
+
+    // 1️⃣ Get tournament block
+    const block = await prisma.tournamentBlock.findUnique({
+        where: { id: tournamentBlockId }
+    });
+
+    if (!block) return res.status(404).json({ error: "Tournament not found" });
+
+    const isFree = block.currencyType === 'free';
+    const MAX = block.players;
+
+    // 2️⃣ Check if user already inside an open room
+    const existing = await prisma.userTournament.findFirst({
+        where: {
+            userId,
+            tournamentBlockId,
+            room: { released: false }
+        },
+        include: { room: true }
+    });
+
+    if (existing) {
+        return res.json({
+            success: true,
+            alreadyJoined: true,
+            room: existing.room,
+            participation: existing
+        });
     }
 
+    // ================= TRANSACTION START ================= //
+    const result = await prisma.$transaction(async (tx) => {
+        let room;
 
-  }
+        // 3️⃣ FREE TOURNAMENT BEHAVIOR
+        if (isFree) {
+            // Find an open room
+            room = await tx.rooms.findFirst({
+                where: {
+                    tournamentBlockId,
+                    released: false,
+                    currentPlayers: { lt: MAX }
+                },
+                orderBy: { id: "asc" }
+            });
 
-    //     // 🔹 Trigger blockchain API in background
-    // const { walletAddress, user_papi } = await getUserWallet(req.user.id);
-    // cryptoMining({
-    //   walletAddress,
-    //   functionName: 'MatchInit',
-    //   user_papi
-    // }).catch(err => {
-    //   console.error(`Blockchain call failed for ${req.user.id}:`, err.message);
-    // });
+            if (!room) {
+                // Create new room
+                room = await tx.rooms.create({
+                    data: {
+                        gameId: block.gameId,
+                        tournamentBlockId,
+                        maxPlayers: MAX,
+                        currentPlayers: 0,
+                        released: false
+                    }
+                });
+            }
+
+            // Reserve slot atomically
+            await tx.rooms.update({
+                where: { id: room.id },
+                data: { currentPlayers: { increment: 1 } }
+            });
+        }
+
+        // 4️⃣ PAID TOURNAMENT BEHAVIOR
+        else {
+            // // Deduct entry fee
+            // if (block.currencyType === "gems") {
+            //     await tx.users.update({
+            //         where: { id: userId },
+            //         data: { gems: { decrement: block.entryFee } }
+            //     });
+            // } else if (block.currencyType === "cash") {
+            //     await tx.users.update({
+            //         where: { id: userId },
+            //         data: { cash: { decrement: block.entryFee } }
+            //     });
+            // }
+          if (block.currencyType === "gems" || block.currencyType === "cash") {
+            await bank.updateCurrency(        
+              req.user.id,
+              block.entryFee,
+              block.currencyType,
+              "debit",
+              bank.transactiontype.matchEntry
+            );
+          }
+
+            // Create a new room every time
+            room = await tx.rooms.create({
+                data: {
+                    gameId: block.gameId,
+                    tournamentBlockId,
+                    maxPlayers: MAX,
+                    currentPlayers: 1,   // player already added
+                    released: false
+                }
+            });
+        }
+
+        // 5️⃣ Register user in room (FREE = multiple tries allowed, PAID = one time)
+        const participation = await tx.userTournament.create({
+            data: {
+                userId,
+                tournamentBlockId,
+                roomId: room.id,
+                userName: `user_${userId}`
+            }
+        });
+
+        return { room, participation };
+    });
+
+    return res.json({
+        success: true,
+        type: isFree ? "free" : "paid",
+        room: result.room,
+        participation: result.participation
+    });
+});
 
 
-  return makeResponse(res, SUCCESS, true, responseMessages.ROOM_CREATED, {
-    roomId: room.id,
-    userTournamentId: userTournament.id,
-    // reamingSupply: activeSeason ? activeSeason.total_supply - (activeSeason?.claimed + reward) : 0,
-    canWinReward: canWinReward > 0 ? true : false,
-  });
 
-}));
+// router.post("/game/finish", UserMiddleware, validators('GAME_FINISH'), handleRequest(async (req, res) => {
+//   const { gameId, roomId, tournamentId, points, time, kills, bossKills } = req.body;
+//   const userId = req.user.id;
 
+//   const tournament = await prisma.userTournament.findFirst({
+//     where: { userId, roomId },
+//   });
 
-router.post("/game/finish", UserMiddleware, validators('GAME_FINISH'), handleRequest(async (req, res) => {
-  const { gameId, roomId, tournamentId, points, time, kills, bossKills } = req.body;
-  const userId = req.user.id;
+//   if (!tournament && tournament?.id != tournamentId) {
+//     return makeResponse(res, BAD_REQUEST, false, responseMessages.TOURNAMNENT_NOT_FOUND, {})
+//   }
 
-  const tournament = await prisma.userTournament.findFirst({
-    where: { userId, roomId },
-  });
+//   const tournamentScore = await prisma.userTournamentScores.findFirst({
+//     where: {
+//       userId,
+//       userTournamentId: tournament.id
+//     },
+//     select: { scoreSubmit: true }
+//   });
 
-  if (!tournament && tournament?.id != tournamentId) {
-    return makeResponse(res, BAD_REQUEST, false, responseMessages.TOURNAMNENT_NOT_FOUND, {})
-  }
+//   if (tournamentScore?.scoreSubmit) {
+//     return makeResponse(res, BAD_REQUEST, false, responseMessages.SCORE_ALREADY_SUBMIT, {})
+//   }
 
-  const tournamentScore = await prisma.userTournamentScores.findFirst({
-    where: {
-      userId,
-      userTournamentId: tournament.id
-    },
-    select: { scoreSubmit: true }
-  });
+//   const gameData = await prisma.games.findUnique({ where: { id: gameId } })
 
-  if (tournamentScore?.scoreSubmit) {
-    return makeResponse(res, BAD_REQUEST, false, responseMessages.SCORE_ALREADY_SUBMIT, {})
-  }
-
-  const gameData = await prisma.games.findUnique({ where: { id: gameId } })
-
-  if (!gameData) {
-    return makeResponse(res, BAD_REQUEST, false, `Game not available.`);
-  }
+//   if (!gameData) {
+//     return makeResponse(res, BAD_REQUEST, false, `Game not available.`);
+//   }
 
 
   
-  // ------------------------------
-  // 🔹 Calculate final score
-  const scoreFromPoints = (kills || 0) * gameData.kills; // 5 coins per point
-  const scoreFromBossKills = (bossKills || 0) * gameData.bossKills; // 5 coins per point
-  const scoreFromTime = Math.floor((time || 0)) * gameData.timeBonus; // 2 coins per 10 sec
-  const finalScore = scoreFromPoints + scoreFromTime + scoreFromBossKills;
-  // ------------------------------
+//   // ------------------------------
+//   // 🔹 Calculate final score
+//   const scoreFromPoints = (kills || 0) * gameData.kills; // 5 coins per point
+//   const scoreFromBossKills = (bossKills || 0) * gameData.bossKills; // 5 coins per point
+//   const scoreFromTime = Math.floor((time || 0)) * gameData.timeBonus; // 2 coins per 10 sec
+//   const finalScore = scoreFromPoints + scoreFromTime + scoreFromBossKills;
+//   // ------------------------------
 
-      // return makeResponse(res, BAD_REQUEST, false, 'reward already claimed by user', {finalScore });
-
-
-
-  // 1. Save game score
-  await prisma.userTournamentScores.create({
-    data: {
-      userId,
-      userTournamentId: tournament.id,
-      score: finalScore,
-      // scoreAry: [score], // or [] if not using
-      stats: { kills, time, scoreFromPoints, scoreFromTime, scoreFromBossKills }, // optional for debugging
-      scoreSubmit: true,
-      timerStarted: true,
-    },
-  });
-
-
-  // 2. Update user games win,played records
-  await prisma.users.update({
-    where: { id: userId },
-    data: {
-      gamesPlayed: { increment: 1 },
-      // gamesWon: won ? { increment: 1 } : undefined,
-    },
-  });
+//       // return makeResponse(res, BAD_REQUEST, false, 'reward already claimed by user', {finalScore });
 
 
 
-  // 4. Update room so that nobody join the same room while one player is out from game
-  const updatedRoom = await prisma.rooms.update({
-    where: { id: roomId },
-    data: { released: true },
-  });
+//   // 1. Save game score
+//   await prisma.userTournamentScores.create({
+//     data: {
+//       userId,
+//       userTournamentId: tournament.id,
+//       score: finalScore,
+//       // scoreAry: [score], // or [] if not using
+//       stats: { kills, time, scoreFromPoints, scoreFromTime, scoreFromBossKills }, // optional for debugging
+//       scoreSubmit: true,
+//       timerStarted: true,
+//     },
+//   });
+
+
+//   // 2. Update user games win,played records
+//   await prisma.users.update({
+//     where: { id: userId },
+//     data: {
+//       gamesPlayed: { increment: 1 },
+//       // gamesWon: won ? { increment: 1 } : undefined,
+//     },
+//   });
 
 
 
-  // 5. Update user wallet and add winning reward if won
-  if (finalScore) {
-    // check is user actually played this game
-    const existingWinner = await prisma.userGameRewardHistory.findFirst({
-      where: {
-        gameId: gameData.id,
-        roomId,
-        userId
-      }
-    });
-
-    if (existingWinner) {
-      return makeResponse(res, BAD_REQUEST, false, 'reward already claimed by user', { existingWinner });
-    }
+//   // 4. Update room so that nobody join the same room while one player is out from game
+//   const updatedRoom = await prisma.rooms.update({
+//     where: { id: roomId },
+//     data: { released: true },
+//   });
 
 
 
-    const reward = finalScore;
-    // const activeSeason = await prisma.airdropSeason.findFirst({
-    //   where: {
-    //     status: 0,
-    //     start_time: { lte: new Date() },
-    //     end_time: { gte: new Date() }
-    //   },
-    //   orderBy: { id: 'desc' }
-    // });
-    // if (!activeSeason) {
-    //   console.warn(`⛔ No active airdrop season for user ${userId}`);
-    //   return makeResponse(res, BAD_REQUEST, false, "No active airdrop season", {});
-    // }
+//   // 5. Update user wallet and add winning reward if won
+//   if (finalScore) {
+//     // check is user actually played this game
+//     const existingWinner = await prisma.userGameRewardHistory.findFirst({
+//       where: {
+//         gameId: gameData.id,
+//         roomId,
+//         userId
+//       }
+//     });
 
-    await prisma.userGameRewardHistory.create({
-      data: {
-        userId,
-        gameId: gameData.id,
-        roomId,
-        reward,
-        // rank,
-        currency: gameData.winningCurrencyType,
-        reason: bank.transactiontype.gameWinReward,
-        // seasonId: activeSeason ? activeSeason.id : null,
-        seasonId:  null,
-      }
-    });
+//     if (existingWinner) {
+//       return makeResponse(res, BAD_REQUEST, false, 'reward already claimed by user', { existingWinner });
+//     }
 
 
-    if (!updatedRoom.freeEntry) {
 
-      // const result = await handleAirdropReward({
-      //   userId,
-      //   winAmount: reward, // or reward * multiplier if any
-      // });
+//     const reward = finalScore;
+//     // const activeSeason = await prisma.airdropSeason.findFirst({
+//     //   where: {
+//     //     status: 0,
+//     //     start_time: { lte: new Date() },
+//     //     end_time: { gte: new Date() }
+//     //   },
+//     //   orderBy: { id: 'desc' }
+//     // });
+//     // if (!activeSeason) {
+//     //   console.warn(`⛔ No active airdrop season for user ${userId}`);
+//     //   return makeResponse(res, BAD_REQUEST, false, "No active airdrop season", {});
+//     // }
 
-      await bank.updateCurrency(userId, reward, gameData.winningCurrencyType, "credit", bank.transactiontype.gameWinReward);
+//     await prisma.userGameRewardHistory.create({
+//       data: {
+//         userId,
+//         gameId: gameData.id,
+//         roomId,
+//         reward,
+//         // rank,
+//         currency: gameData.winningCurrencyType,
+//         reason: bank.transactiontype.gameWinReward,
+//         // seasonId: activeSeason ? activeSeason.id : null,
+//         seasonId:  null,
+//       }
+//     });
+
+
+//     if (!updatedRoom.freeEntry) {
+
+//       // const result = await handleAirdropReward({
+//       //   userId,
+//       //   winAmount: reward, // or reward * multiplier if any
+//       // });
+
+//       await bank.updateCurrency(userId, reward, gameData.winningCurrencyType, "credit", bank.transactiontype.gameWinReward);
    
 
+//     }
+
+//   }
+
+//   return makeResponse(res, SUCCESS, true, responseMessages.GAME_COMPLETE)
+
+// }));
+
+
+router.post("/game/submit-score",UserMiddleware, async (req, res) => {
+    const userId = req.user.id;
+    const { roomId, score } = req.body;
+
+    if (!userId || !roomId || score === undefined)
+        return res.status(400).json({ error: "userId, roomId, score required" });
+
+    // Update user's score (FREE = override allowed)
+    await prisma.userTournament.updateMany({
+        where: { userId, roomId },
+        data: { score, scoreSubmitted: true }
+    });
+
+    const room = await prisma.rooms.findUnique({ where: { id: roomId } });
+    const participantsCount = await prisma.userTournament.count({ where: { roomId } });
+
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    // Check if room is full → close it
+    if (participantsCount >= room.maxPlayers && !room.released) {
+        await prisma.rooms.update({
+            where: { id: roomId },
+            data: { released: true, releaseTime: new Date() }
+        });
+
+        return res.json({
+            success: true,
+            completed: true,
+            message: "Tournament completed, room closed."
+        });
     }
 
-  }
-
-  return makeResponse(res, SUCCESS, true, responseMessages.GAME_COMPLETE)
-
-}));
-
+    return res.json({ success: true, scoreUpdated: true });
+});
 
 router.get("/game/result", UserMiddleware, queryValidators('GAME_RESULT'), handleRequest(async (req, res) => {
   const roomId = parseInt(req.query.roomId, 10);
@@ -508,5 +675,17 @@ router.get("/game/result", UserMiddleware, queryValidators('GAME_RESULT'), handl
   return makeResponse(res, SUCCESS, true, responseMessages.RECORD_FOUND, results);
 }));
 
+
+
+/**
+ * GET /games
+ * List all games
+ */
+router.get("/games", handleRequest(async (req, res) => {
+  const games = await prisma.games.findMany({
+    orderBy: { id: "desc" }
+  });
+  return makeResponse(res, SUCCESS, true, "Games listed", { games });
+}));
 
 export default router;

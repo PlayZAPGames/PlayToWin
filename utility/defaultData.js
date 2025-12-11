@@ -12,16 +12,6 @@ export async function insertDefaults() {
         gems: { referreeReward: 30, referrerReward: 100 }, referrerDailyRewardLimit: 2000
       }
     },
-    // {
-    //   key: "airdropStats",
-    //   data1: {
-    //     totalCommunity: "140 M"
-    //   }
-    // },
-    // {
-    //   key: "ticketSwapFee",
-    //   data2: "10",
-    // },
     {
       key: "joinReward",
       data1: {
@@ -179,20 +169,147 @@ export async function insertDefaults() {
 
   const gameDefaults = [
     {
-      gameName: "survival",
-      serverGameName: "",
-      keyboardGameName: "",
-      url: "",
-      miniAppUrl: "",
-      iMessage_Solo: "",
-      entryFee: 0,
-      currencyType: "free",
-      winningCurrencyType: "gems",
-      timeBonus: 1,
-      kills: 1,
-      bossKills: 100,
+      gameName: "Blocks",
+      imageIndex: 0,
+    },
+    {
+      gameName: "Match 3",
+      imageIndex: 1,
+    },
+    {
+      gameName: "Solitare",
+      imageIndex: 2,
     }
   ];
+
+ const tournamentBlockDefaults = [
+  {
+    gameName: "Blocks",
+    tournaments: [
+      {
+        name: "Freeroll",
+        prizePool: 0.09,
+        players: 10,
+        entryFee: 0,
+        currencyType: "ads",
+        adsEnabled: true,
+        status: "active"
+      },
+      {
+        name: "Cash Practice",
+        prizePool: 0.11,
+        players: 5,
+        entryFee: 0.03,
+        currencyType: "cash",
+        status: "active"
+      },
+      {
+        name: "Warm Up",
+        prizePool: 0.20,
+        players: 10,
+        entryFee: 200,
+        currencyType: "gems",
+        status: "active"
+      },
+      {
+        name: "Starter Brawl",
+        prizePool: 0.14,
+        players: 2,
+        entryFee: 0.10,
+        currencyType: "cash",
+        status: "active"
+      },
+      {
+        name: "Ascension",
+        prizePool: 3.50,
+        players: 5,
+        entryFee: 1,
+        currencyType: "cash",
+        status: "active"
+      }
+    ]
+  },
+
+  {
+    gameName: "Match 3",
+    tournaments: [
+      {
+        name: "Freeroll",
+        prizePool: 0.05,
+        players: 10,
+        entryFee: 0,
+        currencyType: "ads",
+        adsEnabled: true,
+        status: "active"
+      },
+      {
+        name: "Warm Up",
+        prizePool: 0.18,
+        players: 10,
+        entryFee: 150,
+        currencyType: "gems",
+        status: "active"
+      },
+      {
+        name: "Cash Practice",
+        prizePool: 0.12,
+        players: 5,
+        entryFee: 0.04,
+        currencyType: "cash",
+        status: "active"
+      },
+      {
+        name: "Power Duel",
+        prizePool: 0.25,
+        players: 5,
+        entryFee: 0.20,
+        currencyType: "cash",
+        status: "active"
+      }
+    ]
+  },
+
+  {
+    gameName: "Solitare",
+    tournaments: [
+      {
+        name: "Freeroll",
+        prizePool: 0.07,
+        players: 10,
+        entryFee: 0,
+        currencyType: "ads",
+        adsEnabled: true,
+        status: "active"
+      },
+      {
+        name: "Pro Warm Up",
+        prizePool: 0.22,
+        players: 10,
+        entryFee: 200,
+        currencyType: "gems",
+        status: "active"
+      },
+      {
+        name: "Cash Duel",
+        prizePool: 0.30,
+        players: 2,
+        entryFee: 0.20,
+        currencyType: "cash",
+        status: "active"
+      },
+      {
+        name: "High Stakes",
+        prizePool: 5.00,
+        players: 5,
+        entryFee: 2,
+        currencyType: "cash",
+        status: "active"
+      }
+    ]
+  }
+];
+
+
 
   // ✅ Insert Spin Wheel Defaults
   const spinWheelDefaults = [
@@ -255,259 +372,7 @@ export async function insertDefaults() {
   ];
 
 
-  // const storeDefaults = [
-  //   // ⚔️ weapons
-  //   {
-  //     name: "Boomerang",
-  //     description: "A basic Boomerang forged from iron.",
-  //     type: "weapon",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 100, stats: { attack: 10, speed: 1.0 } },
-  //       { level: 2, upgradeCost: 200, stats: { attack: 15, speed: 1.1 } },
-  //       { level: 3, upgradeCost: 400, stats: { attack: 20, speed: 1.2 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Kunai",
-  //     description: "A basic Kunai forged from iron.",
-  //     type: "weapon",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 100, stats: { attack: 10, speed: 1.0 } },
-  //       { level: 2, upgradeCost: 200, stats: { attack: 15, speed: 1.1 } },
-  //       { level: 3, upgradeCost: 400, stats: { attack: 20, speed: 1.2 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Shuriken 1",
-  //     description: "A basic Shuriken forged from iron. Reliable and sturdy.",
-  //     type: "weapon",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 100, stats: { attack: 10, speed: 1.0 } },
-  //       { level: 2, upgradeCost: 200, stats: { attack: 15, speed: 1.1 } },
-  //       { level: 3, upgradeCost: 400, stats: { attack: 20, speed: 1.2 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Shuriken 2",
-  //     description: "Lightweight Shuriken designed for quick ranged attacks.",
-  //     type: "weapon",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 120, stats: { attack: 8, range: 15 } },
-  //       { level: 2, upgradeCost: 240, stats: { attack: 12, range: 18 } },
-  //       { level: 3, upgradeCost: 480, stats: { attack: 16, range: 20 } },
-  //     ],
-  //   },
-
-
-  //   // 🛡️armor/Inventory
-  //   {
-  //     name: "Gloves 1",
-  //     description: "Basic armor offering minimal protection.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 80, stats: { defense: 5, weight: 2 } },
-  //       { level: 2, upgradeCost: 160, stats: { defense: 8, weight: 2.2 } },
-  //       { level: 3, upgradeCost: 300, stats: { defense: 12, weight: 2.5 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Gloves 2",
-  //     description: "Basic armor offering minimal protection.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 80, stats: { defense: 5, weight: 2 } },
-  //       { level: 2, upgradeCost: 160, stats: { defense: 8, weight: 2.2 } },
-  //       { level: 3, upgradeCost: 300, stats: { defense: 12, weight: 2.5 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Gloves 3",
-  //     description: "Basic armor offering minimal protection.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 80, stats: { defense: 5, weight: 2 } },
-  //       { level: 2, upgradeCost: 160, stats: { defense: 8, weight: 2.2 } },
-  //       { level: 3, upgradeCost: 300, stats: { defense: 12, weight: 2.5 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Hat 1",
-  //     description: "Hat that provides excellent protection.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 150, stats: { defense: 10, weight: 4 } },
-  //       { level: 2, upgradeCost: 300, stats: { defense: 15, weight: 4.5 } },
-  //       { level: 3, upgradeCost: 500, stats: { defense: 20, weight: 5 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Hat 2",
-  //     description: "Hat that provides excellent protection.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 150, stats: { defense: 10, weight: 4 } },
-  //       { level: 2, upgradeCost: 300, stats: { defense: 15, weight: 4.5 } },
-  //       { level: 3, upgradeCost: 500, stats: { defense: 20, weight: 5 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Hat 3",
-  //     description: "Hat that provides excellent protection.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 150, stats: { defense: 10, weight: 4 } },
-  //       { level: 2, upgradeCost: 300, stats: { defense: 15, weight: 4.5 } },
-  //       { level: 3, upgradeCost: 500, stats: { defense: 20, weight: 5 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Shoes 1",
-  //     description: "A high-tech Shoes that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Shoes 2",
-  //     description: "A high-tech Shoes that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Shoes 3",
-  //     description: "A high-tech Shoes that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Pant 1",
-  //     description: "A high-tech Pant that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Pant 2",
-  //     description: "A high-tech Pant that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Pant 3",
-  //     description: "A high-tech Pant that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Vest 1",
-  //     description: "A high-tech Vest that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Vest 2",
-  //     description: "A high-tech Vest that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  //   {
-  //     name: "Vest 3",
-  //     description: "A high-tech Vest that absorbs energy attacks.",
-  //     type: "inventory",
-  //     currencyType: "virtual1",
-  //     baseLevel: 1,
-  //     maxLevel: 3,
-  //     levels: [
-  //       { level: 1, upgradeCost: 200, stats: { defense: 12, energyResist: 5 } },
-  //       { level: 2, upgradeCost: 400, stats: { defense: 18, energyResist: 10 } },
-  //       { level: 3, upgradeCost: 700, stats: { defense: 25, energyResist: 15 } },
-  //     ],
-  //   },
-  // ];
+  
 
 
 
@@ -566,6 +431,38 @@ export async function insertDefaults() {
       });
     }
   }
+
+  for (const gameBlock of tournamentBlockDefaults) {
+  const game = await prisma.games.findFirst({
+    where: { gameName: gameBlock.gameName }
+  });
+
+  if (!game) {
+    console.log(`Game not found: ${gameBlock.gameName}`);
+    continue;
+  }
+
+  for (const t of gameBlock.tournaments) {
+    const exists = await prisma.tournamentBlock.findFirst({
+      where: {
+        name: t.name,
+        gameId: game.id
+      }
+    });
+
+    if (!exists) {
+      await prisma.tournamentBlock.create({
+        data: {
+          ...t,
+          gameId: game.id
+        }
+      });
+
+      console.log(`Tournament created → ${t.name} (${gameBlock.gameName})`);
+    }
+  }
+}
+
 
   // for (const item of storeDefaults) {
   //   const exists = await prisma.storeItem.findFirst({
