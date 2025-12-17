@@ -189,7 +189,7 @@ export async function insertDefaults() {
       {
         name: "Freeroll",
         prizePool: 0.09,
-        players: 10,
+        players: 3,
         entryFee: 0,
         currencyType: "ads",
         adsEnabled: true,
@@ -198,7 +198,7 @@ export async function insertDefaults() {
       {
         name: "Cash Practice",
         prizePool: 0.11,
-        players: 5,
+        players: 3,
         entryFee: 0.03,
         currencyType: "cash",
         status: "active"
@@ -206,7 +206,7 @@ export async function insertDefaults() {
       {
         name: "Warm Up",
         prizePool: 0.20,
-        players: 10,
+        players: 3,
         entryFee: 200,
         currencyType: "gems",
         status: "active"
@@ -222,7 +222,7 @@ export async function insertDefaults() {
       {
         name: "Ascension",
         prizePool: 3.50,
-        players: 5,
+        players: 3,
         entryFee: 1,
         currencyType: "cash",
         status: "active"
@@ -236,7 +236,7 @@ export async function insertDefaults() {
       {
         name: "Freeroll",
         prizePool: 0.05,
-        players: 10,
+        players: 3,
         entryFee: 0,
         currencyType: "ads",
         adsEnabled: true,
@@ -245,7 +245,7 @@ export async function insertDefaults() {
       {
         name: "Warm Up",
         prizePool: 0.18,
-        players: 10,
+        players: 3,
         entryFee: 150,
         currencyType: "gems",
         status: "active"
@@ -253,7 +253,7 @@ export async function insertDefaults() {
       {
         name: "Cash Practice",
         prizePool: 0.12,
-        players: 5,
+        players: 3,
         entryFee: 0.04,
         currencyType: "cash",
         status: "active"
@@ -261,7 +261,7 @@ export async function insertDefaults() {
       {
         name: "Power Duel",
         prizePool: 0.25,
-        players: 5,
+        players: 3,
         entryFee: 0.20,
         currencyType: "cash",
         status: "active"
@@ -275,7 +275,7 @@ export async function insertDefaults() {
       {
         name: "Freeroll",
         prizePool: 0.07,
-        players: 10,
+        players: 3,
         entryFee: 0,
         currencyType: "ads",
         adsEnabled: true,
@@ -284,7 +284,7 @@ export async function insertDefaults() {
       {
         name: "Pro Warm Up",
         prizePool: 0.22,
-        players: 10,
+        players: 3,
         entryFee: 200,
         currencyType: "gems",
         status: "active"
@@ -292,7 +292,7 @@ export async function insertDefaults() {
       {
         name: "Cash Duel",
         prizePool: 0.30,
-        players: 2,
+        players: 3,
         entryFee: 0.20,
         currencyType: "cash",
         status: "active"
@@ -300,7 +300,7 @@ export async function insertDefaults() {
       {
         name: "High Stakes",
         prizePool: 5.00,
-        players: 5,
+        players: 3,
         entryFee: 2,
         currencyType: "cash",
         status: "active"

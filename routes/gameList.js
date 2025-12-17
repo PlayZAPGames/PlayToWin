@@ -3,7 +3,7 @@ import prisma from "../prisma/db.js";
 import { UserMiddleware } from "../utility/tokenAuthService.js";
 import { handleRequest } from "../helpers/requestHandler/asyncHandler.js";
 import { makeResponse, responseMessages, statusCodes } from "../helpers/index.js";
-
+import { formatMoney } from "../utility/cypher.js";
 
 const router = express.Router();
 
@@ -28,7 +28,7 @@ router.get("/game/tournament-blocks", handleRequest(async (req, res) => {
 
   const blocks = await prisma.tournamentBlock.findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    orderBy: { id: "asc" },
     // include: {
     //   game: {
     //     select: { id: true, gameName: true }
@@ -36,7 +36,15 @@ router.get("/game/tournament-blocks", handleRequest(async (req, res) => {
     // }
   });
 
-  return makeResponse(res, statusCodes.SUCCESS, true, "Tournament blocks listed", blocks )
+
+    const formattedBlocks = blocks.map(block => ({
+      ...block,
+      entryFee: formatMoney(block.entryFee),
+      prizePool: formatMoney(block.prizePool),
+    }));
+
+
+  return makeResponse(res, statusCodes.SUCCESS, true, "Tournament blocks listed", formattedBlocks)
 }));
 
 

@@ -52,11 +52,11 @@ CREATE TABLE "Users" (
 CREATE TABLE "Rooms" (
     "id" SERIAL NOT NULL,
     "name" TEXT,
-    "iMessage" TEXT,
-    "chatId" TEXT,
     "maxPlayers" INTEGER NOT NULL DEFAULT 4,
+    "currentPlayers" INTEGER NOT NULL DEFAULT 0,
     "gameId" INTEGER,
-    "entryFee" INTEGER,
+    "tournamentBlockId" INTEGER,
+    "entryFee" DOUBLE PRECISION,
     "currencyType" TEXT,
     "released" BOOLEAN DEFAULT false,
     "freeEntry" BOOLEAN NOT NULL DEFAULT false,
@@ -73,8 +73,6 @@ CREATE TABLE "Rooms" (
 CREATE TABLE "UserTournament" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "tgId" BIGINT NOT NULL DEFAULT 0,
-    "iMessage" TEXT NOT NULL DEFAULT '',
     "userName" TEXT NOT NULL,
     "banned" BOOLEAN NOT NULL DEFAULT false,
     "score" INTEGER NOT NULL DEFAULT 0,
@@ -200,8 +198,7 @@ CREATE TABLE "TournamentBlock" (
     "entryFee" DOUBLE PRECISION NOT NULL,
     "currencyType" TEXT NOT NULL,
     "prizePool" DOUBLE PRECISION NOT NULL,
-    "maxPlayers" INTEGER NOT NULL,
-    "currentPlayers" INTEGER NOT NULL DEFAULT 0,
+    "players" INTEGER NOT NULL,
     "status" TEXT NOT NULL,
     "adsEnabled" BOOLEAN NOT NULL DEFAULT false,
     "resultAnnounced" BOOLEAN NOT NULL DEFAULT false,
@@ -293,17 +290,7 @@ CREATE TABLE "UserGameRewardHistory" (
 CREATE TABLE "games" (
     "id" SERIAL NOT NULL,
     "gameName" TEXT NOT NULL,
-    "serverGameName" TEXT,
-    "keyboardGameName" TEXT,
-    "url" TEXT,
-    "miniAppUrl" TEXT,
-    "iMessage_Solo" TEXT,
-    "entryFee" DOUBLE PRECISION NOT NULL,
-    "currencyType" TEXT NOT NULL DEFAULT 'gems',
-    "winningCurrencyType" TEXT NOT NULL DEFAULT 'cash',
-    "kills" DOUBLE PRECISION NOT NULL DEFAULT 1,
-    "timeBonus" DOUBLE PRECISION NOT NULL DEFAULT 1,
-    "bossKills" DOUBLE PRECISION NOT NULL DEFAULT 100,
+    "imageIndex" INTEGER,
 
     CONSTRAINT "games_pkey" PRIMARY KEY ("id")
 );
@@ -466,6 +453,9 @@ CREATE UNIQUE INDEX "Users_refreshToken_key" ON "Users"("refreshToken");
 CREATE INDEX "index_Users_on_id" ON "Users"("id");
 
 -- CreateIndex
+CREATE INDEX "Rooms_tournamentBlockId_released_currentPlayers_idx" ON "Rooms"("tournamentBlockId", "released", "currentPlayers");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "UserTournament_userId_roomId_key" ON "UserTournament"("userId", "roomId");
 
 -- CreateIndex
@@ -554,6 +544,9 @@ CREATE INDEX "CashTransaction_type_idx" ON "CashTransaction"("type");
 
 -- CreateIndex
 CREATE INDEX "CashTransaction_createdAt_idx" ON "CashTransaction"("createdAt");
+
+-- AddForeignKey
+ALTER TABLE "Rooms" ADD CONSTRAINT "Rooms_tournamentBlockId_fkey" FOREIGN KEY ("tournamentBlockId") REFERENCES "TournamentBlock"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserTournament" ADD CONSTRAINT "UserTournament_roomId_fkey" FOREIGN KEY ("roomId") REFERENCES "Rooms"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

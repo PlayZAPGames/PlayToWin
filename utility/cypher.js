@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { Prisma } from "@prisma/client";
 const algorithm = "aes-256-cbc";
 const iv = crypto.randomBytes(16);
 import { Buffer } from "buffer";
@@ -22,46 +23,7 @@ function decrypt(text, secretKey) {
   return decrypted.toString();
 }
 
-// function encryptRubyData(data, secretKey) {
-//   try {
-//     const cipher = crypto.createCipheriv(
-//       "aes-256-cbc",
-//       secretKey,
-//       Buffer.alloc(16) // Initialization vector (IV) should be the same as decryption
-//     );
 
-//     const dataString = data.toString(); // Ensure data is in string format
-//     let encryptedBuffer = cipher.update(dataString);
-//     encryptedBuffer = Buffer.concat([encryptedBuffer, cipher.final()]);
-
-//     const encryptedData = encryptedBuffer.toString("base64");
-//     console.log("Encrypted:", encryptedData);
-//     return encryptedData;
-//   } catch (error) {
-//     console.error("Encryption failed:", error.message);
-//     return null;
-//   }
-// }
-
-// function decryptRubyData(encryptedData, secretKey) {
-//   try {
-//     const encryptedBuffer = Buffer.from(encryptedData, "base64");
-//     const decipher = crypto.createDecipheriv(
-//       "aes-256-cbc",
-//       secretKey,
-//       Buffer.alloc(16)
-//     );
-//     let decryptedBuffer = decipher.update(encryptedBuffer);
-//     decryptedBuffer = Buffer.concat([decryptedBuffer, decipher.final()]);
-
-//     // console.log("Decrypted:", decryptedBuffer.toString());
-//     // const decryptedInteger = parseInt(decryptedBuffer.toString(), 10);
-//     return decryptedBuffer.toString();
-//   } catch (error) {
-//     console.error("Decryption failed:", error.message);
-//     return null;
-//   }
-// }
 
 function stringToSlug(str) {
   const encoded = Buffer.from(str).toString("base64");
@@ -135,6 +97,26 @@ function createHash(userId) {
   return shortHash;
 }
 
+function formatMoney(value) {
+  if (value === null || value === undefined) {
+    return '0.00';
+  }
+
+  let num;
+
+  if (value instanceof Prisma.Decimal) {
+    num = value.toNumber();
+  } else {
+    num = Number(value);
+  }
+
+  if (Number.isNaN(num)) {
+    return '0.00';
+  }
+
+  return num.toFixed(2);
+}
+
 export {
   encrypt,
   decrypt,
@@ -143,7 +125,6 @@ export {
   slugToNumber,
   stringToSlug,
   slugToString,
-  // encryptRubyData,
-  // decryptRubyData,
+  formatMoney,
   createHash,
 };

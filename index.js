@@ -27,6 +27,7 @@ import paymentRoute from "./routes/paymentRoutes.js";
 import adminRoutes from "./routes/adminRoutes/index.js";
 import WeeklyRewardsCronJobs from "./utility/weeklyRewardCron.js";
 import {distributeWeeklyRewards} from "./utility/weeklyRewardCron.js";
+import {autoCloseTournamentCron} from "./utility/cronJobs.js";
 
 import { insertDefaults } from "./utility/defaultData.js";
 // __dirname workaround for ES modules
@@ -97,6 +98,7 @@ app.listen(PORT, async () => {
   }
   insertDefaults();
   WeeklyRewardsCronJobs();
+  autoCloseTournamentCron();
 });
 
 app.get("/", (req, res) => {

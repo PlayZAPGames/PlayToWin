@@ -292,135 +292,139 @@ router.get("/game/fame", UserMiddleware, handleRequest(async function (req, res)
 // }));
 
 router.post("/game/play", UserMiddleware, async (req, res) => {
-    // const { userId, tournamentBlockId } = req.body;
+  const userId = req.user.id;
+  const { tournamentBlockId } = req.body;
 
-    const userId = req.user.id;
-    const { tournamentBlockId } = req.body;
+  if (!tournamentBlockId) {
+    return res.status(400).json({ error: "tournamentBlockId required" });
+  }
 
-    if (!userId || !tournamentBlockId)
-        return res.status(400).json({ error: "userId & tournamentBlockId required" });
+  // Tournament block fetch
+  const block = await prisma.tournamentBlock.findUnique({
+    where: { id: tournamentBlockId }
+  });
 
-    // 1️⃣ Get tournament block
-    const block = await prisma.tournamentBlock.findUnique({
-        where: { id: tournamentBlockId }
-    });
+  if (!block) {
+    return res.status(404).json({ error: "Tournament not found" });
+  }
 
-    if (!block) return res.status(404).json({ error: "Tournament not found" });
+  //   return res.json({
+  //   success: true,
+  //    block
 
-    const isFree = block.currencyType === 'free';
-    const MAX = block.players;
+  // });
 
-    // 2️⃣ Check if user already inside an open room
+  const isFree = block.currencyType === "ads";
+  const MAX = block.players;
+
+  // 🔹 पहले check करो user पहले से किसी open room में है या नहीं (FREE के लिए)
+  if (isFree) {
     const existing = await prisma.userTournament.findFirst({
-        where: {
-            userId,
-            tournamentBlockId,
-            room: { released: false }
-        },
-        include: { room: true }
+      where: {
+        userId,
+        tournamentBlockId,
+        room: { released: false }
+      },
+      include: { room: true }
     });
 
     if (existing) {
-        return res.json({
-            success: true,
-            alreadyJoined: true,
-            room: existing.room,
-            participation: existing
+      return res.json({
+        success: true,
+        alreadyJoined: true,
+        room: existing.room
+      });
+    }
+  }
+
+  // ================= TRANSACTION =================
+  const result = await prisma.$transaction(async (tx) => {
+    let room;
+
+    // ================= FREE TOURNAMENT =================
+    if (isFree) {
+      room = await tx.rooms.findFirst({
+        where: {
+          tournamentBlockId,
+          released: false,
+          currentPlayers: { lt: MAX }
+        },
+        orderBy: { id: "asc" }
+      });
+
+      if (!room) {
+        room = await tx.rooms.create({
+          data: {
+            gameId: block.gameId,
+            tournamentBlockId,
+            maxPlayers: MAX,
+            currentPlayers: 0,
+            released: false,
+            startTime: new Date()
+          }
         });
+      }
+
+      // 🔒 Atomic increment (race safe)
+      const updated = await tx.rooms.updateMany({
+        where: {
+          id: room.id,
+          currentPlayers: { lt: MAX },
+          released: false
+        },
+        data: { currentPlayers: { increment: 1 } }
+      });
+
+      if (updated.count === 0) {
+        throw new Error("Room full, retry");
+      }
     }
 
-    // ================= TRANSACTION START ================= //
-    const result = await prisma.$transaction(async (tx) => {
-        let room;
+    // ================= PAID TOURNAMENT =================
+    else {
+      // Entry fee deduct (transaction safe)
+      await bank.updateCurrency(
+        userId,
+        block.entryFee,
+        block.currencyType,
+        "debit",
+        "match_entry"
+      );
 
-        // 3️⃣ FREE TOURNAMENT BEHAVIOR
-        if (isFree) {
-            // Find an open room
-            room = await tx.rooms.findFirst({
-                where: {
-                    tournamentBlockId,
-                    released: false,
-                    currentPlayers: { lt: MAX }
-                },
-                orderBy: { id: "asc" }
-            });
-
-            if (!room) {
-                // Create new room
-                room = await tx.rooms.create({
-                    data: {
-                        gameId: block.gameId,
-                        tournamentBlockId,
-                        maxPlayers: MAX,
-                        currentPlayers: 0,
-                        released: false
-                    }
-                });
-            }
-
-            // Reserve slot atomically
-            await tx.rooms.update({
-                where: { id: room.id },
-                data: { currentPlayers: { increment: 1 } }
-            });
+      room = await tx.rooms.create({
+        data: {
+          gameId: block.gameId,
+          tournamentBlockId,
+          maxPlayers: MAX,
+          currentPlayers: 1,
+          released: false,
+          startTime: new Date()
         }
+      });
+    }
 
-        // 4️⃣ PAID TOURNAMENT BEHAVIOR
-        else {
-            // // Deduct entry fee
-            // if (block.currencyType === "gems") {
-            //     await tx.users.update({
-            //         where: { id: userId },
-            //         data: { gems: { decrement: block.entryFee } }
-            //     });
-            // } else if (block.currencyType === "cash") {
-            //     await tx.users.update({
-            //         where: { id: userId },
-            //         data: { cash: { decrement: block.entryFee } }
-            //     });
-            // }
-          if (block.currencyType === "gems" || block.currencyType === "cash") {
-            await bank.updateCurrency(        
-              req.user.id,
-              block.entryFee,
-              block.currencyType,
-              "debit",
-              bank.transactiontype.matchEntry
-            );
-          }
-
-            // Create a new room every time
-            room = await tx.rooms.create({
-                data: {
-                    gameId: block.gameId,
-                    tournamentBlockId,
-                    maxPlayers: MAX,
-                    currentPlayers: 1,   // player already added
-                    released: false
-                }
-            });
-        }
-
-        // 5️⃣ Register user in room (FREE = multiple tries allowed, PAID = one time)
-        const participation = await tx.userTournament.create({
-            data: {
-                userId,
-                tournamentBlockId,
-                roomId: room.id,
-                userName: `user_${userId}`
-            }
-        });
-
-        return { room, participation };
+    // User join
+    await tx.userTournament.create({
+      data: {
+        userId,
+        tournamentBlockId,
+        roomId: room.id,
+        userName: `user_${userId}`,
+        score: 0,
+        scoreSubmitted: false
+      }
     });
 
-    return res.json({
-        success: true,
-        type: isFree ? "free" : "paid",
-        room: result.room,
-        participation: result.participation
-    });
+    return room;
+  });
+
+  return res.json({
+    success: true,
+    type: isFree ? "FREE" : "PAID",
+    room: result
+  });
 });
+
 
 
 
@@ -566,40 +570,113 @@ router.post("/game/play", UserMiddleware, async (req, res) => {
 // }));
 
 
-router.post("/game/submit-score",UserMiddleware, async (req, res) => {
-    const userId = req.user.id;
-    const { roomId, score } = req.body;
+router.post("/game/submit-score", UserMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  const { roomId, score } = req.body;
 
-    if (!userId || !roomId || score === undefined)
-        return res.status(400).json({ error: "userId, roomId, score required" });
+  if (!roomId || score === undefined) {
+    return res.status(400).json({ error: "roomId and score required" });
+  }
 
-    // Update user's score (FREE = override allowed)
-    await prisma.userTournament.updateMany({
-        where: { userId, roomId },
-        data: { score, scoreSubmitted: true }
+  // 1️⃣ User ka score update / overwrite
+  const updated = await prisma.userTournament.updateMany({
+    where: {
+      userId,
+      roomId
+    },
+    data: {
+      score,
+      scoreSubmitted: true
+    }
+  });
+
+  if (updated.count === 0) {
+    return res.status(404).json({ error: "User not found in this room" });
+  }
+
+  // 2️⃣ Room fetch
+  const room = await prisma.rooms.findUnique({
+    where: { id: roomId }
+  });
+
+  if (!room) {
+    return res.status(404).json({ error: "Room not found" });
+  }
+
+  // Agar room already closed hai → kuch nahi karna
+  if (room.released) {
+    return res.json({
+      success: true,
+      message: "Score saved, room already closed"
+    });
+  }
+
+  // 3️⃣ Sab players fetch karo
+  const players = await prisma.userTournament.findMany({
+    where: { roomId }
+  });
+
+  // 4️⃣ Check: kya room full hai?
+  if (players.length < room.maxPlayers) {
+    return res.json({
+      success: true,
+      message: "Score saved, waiting for other players"
+    });
+  }
+
+  // 5️⃣ Check: kya sabne score submit kiya?
+  const pendingPlayers = players.filter(p => !p.scoreSubmitted);
+
+  if (pendingPlayers.length > 0) {
+    return res.json({
+      success: true,
+      message: "Score saved, waiting for remaining players",
+      pendingPlayers: pendingPlayers.length
+    });
+  }
+
+  // ===================== ALL SCORES RECEIVED =====================
+
+  // 6️⃣ Winner decide
+  const sorted = players.sort((a, b) => b.score - a.score);
+  const winner = sorted[0];
+
+  // 7️⃣ Transaction: room close + reward
+  await prisma.$transaction(async (tx) => {
+    // Room close
+    await tx.rooms.update({
+      where: { id: roomId },
+      data: {
+        released: true,
+        releaseTime: new Date()
+      }
     });
 
-    const room = await prisma.rooms.findUnique({ where: { id: roomId } });
-    const participantsCount = await prisma.userTournament.count({ where: { roomId } });
+    // Winner reward
+    await tx.userGameRewardHistory.create({
+      data: {
+        userId: winner.userId,
+        gameId: room.gameId,
+        roomId,
+        reward: 0, // prizePool yahan use karein
+        rank: "1",
+        currency: "gems",
+        reason: "win"
+      }
+    });
+  });
 
-    if (!room) return res.status(404).json({ error: "Room not found" });
-
-    // Check if room is full → close it
-    if (participantsCount >= room.maxPlayers && !room.released) {
-        await prisma.rooms.update({
-            where: { id: roomId },
-            data: { released: true, releaseTime: new Date() }
-        });
-
-        return res.json({
-            success: true,
-            completed: true,
-            message: "Tournament completed, room closed."
-        });
+  return res.json({
+    success: true,
+    completed: true,
+    winner: {
+      userId: winner.userId,
+      score: winner.score
     }
-
-    return res.json({ success: true, scoreUpdated: true });
+  });
 });
+
+
 
 router.get("/game/result", UserMiddleware, queryValidators('GAME_RESULT'), handleRequest(async (req, res) => {
   const roomId = parseInt(req.query.roomId, 10);
